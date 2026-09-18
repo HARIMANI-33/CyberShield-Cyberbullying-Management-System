@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaint Details – CyberShield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/}">Home</a>
+            <a th:href="@{/report}">Report Cyberbullying</a>
+            <a th:href="@{/register}">Register</a>
+            <a th:href="@{/officer}">Officer Portal</a>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 900px;">
+        <div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            <a th:href="@{/officer}" class="btn btn-secondary btn-sm">← Back to Incident Feed</a>
+            <span id="headerCaseNumber" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: var(--cyan);"></span>
+        </div>
+
+        <div id="alertBox" style="display: none;"></div>
+
+        <div id="detailsContainer">
+            <div style="color: var(--text-muted);">Loading complaint details...</div>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield © 2026 – Cyberbullying Complaint Management System
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', loadDetails);
+
+        async function loadDetails() {
+            const urlParams = new URLSearchParams(window.location.search);
+            let id = urlParams.get('id');
+
+            // Fallback: check if id is in path /complaints/view/{id}
+            if (!id) {
+                const parts = window.location.pathname.split('/');
+                id = parts[parts.length - 1];
+            }
+
+            const container = document.getElementById('detailsContainer');
+            const alertBox = document.getElementById('alertBox');
+
+            if (!id || isNaN(id)) {
+                container.innerHTML = `<div class="alert alert-error">No valid complaint ID specified.</div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/complaints/${id}`);
+                const c = await response.json();
+
+                if (!response.ok) {
+                    container.innerHTML = `<div class="alert alert-error">Complaint not found: ${c.error || 'Unknown error'}</div>`;
+                    return;
+                }
+
+                document.getElementById('headerCaseNumber').innerText = c.complaintNumber;
+
+                const threat = (c.threatLevel || 'LOW').toUpperCase();
+                let badgeClass = 'badge-low';
+                if (threat === 'MEDIUM') badgeClass = 'badge-medium';
+                if (threat === 'HIGH') badgeClass = 'badge-high';
+                if (threat === 'CRITICAL') badgeClass = 'badge-critical';
+
+                const isImmediate = threat === 'HIGH' || threat === 'CRITICAL' || c.priority === 'IMMEDIATE_ATTENTION';
+                const immediateBanner = isImmediate ? `
+                    <div class="alert-warning-banner">
+                        <span style="font-size: 1.5rem;">🚨</span>
+                        <div>
+                            <strong style="font-size: 1.1rem; letter-spacing: 0.5px;">IMMEDIATE ATTENTION</strong><br>
+                            High or Critical severity incident flagged for urgent officer review.
+                        </div>
+                    </div>
+                ` : '';
+
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : 'N/A';
+
+                // Analysis Info
+                let analysisHtml = `<p style="color: var(--text-muted);">No analysis recorded.</p>`;
+                if (c.preliminaryAnalysis) {
+                    analysisHtml = `
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-top: 0.5rem;">
+                            <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">
+                                <div class="form-label">Risk Score</div>
+                                <div style="font-size: 1.5rem; font-weight: 700; color: var(--cyan);">${c.preliminaryAnalysis.riskScore}</div>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">
+                                <div class="form-label">Matched Keywords</div>
+                                <div style="font-size: 1.5rem; font-weight: 700;">${c.preliminaryAnalysis.matchedCount}</div>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">
+                                <div class="form-label">Calculated Severity</div>
+                                <span class="badge ${badgeClass}">${c.preliminaryAnalysis.detectedSeverity}</span>
+                            </div>
+                            <div style="background: rgba(15, 23, 42, 0.6); padding: 1rem; border-radius: 8px;">
+                                <div class="form-label">Action Priority</div>
+                                <div style="font-weight: 600; color: ${isImmediate ? '#f87171' : '#a5b4fc'};">
+                                    ${isImmediate ? '🚨 IMMEDIATE ATTENTION' : c.preliminaryAnalysis.priority}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="background: rgba(255, 255, 255, 0.05); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; color: #cbd5e1; margin-top: 1rem;">
+                            ℹ️ <strong>Preliminary automated assessment:</strong> <em>The severity and risk score are an automated initial evaluation. The investigating officer makes the final review.</em>
+                        </div>
+                    `;
+                }
+
+                // Evidence Section
+                let evidenceHtml = `<p style="color: var(--text-muted);">No screenshot evidence attached to this case.</p>`;
+                if (c.evidence && c.evidence.length > 0) {
+                    evidenceHtml = c.evidence.map(ev => {
+                        const isVerified = ev.verificationStatus === 'VERIFIED';
+                        const isRejected = ev.verificationStatus === 'REJECTED';
+                        let statusColor = '#f59e0b';
+                        if (isVerified) statusColor = '#10b981';
+                        if (isRejected) statusColor = '#ef4444';
+
+                        // Format file link if available
+                        const previewPath = ev.filePath ? ('/' + ev.filePath.replace(/\\/g, '/')) : '';
+
+                        return `
+                            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 0.75rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                                    <div>
+                                        <strong>📁 ${escapeHtml(ev.fileName)}</strong>
+                                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">
+                                            Uploaded: ${new Date(ev.uploadedAt).toLocaleString()}
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                                        <span class="badge" style="border: 1px solid ${statusColor}; color: ${statusColor};">${ev.verificationStatus}</span>
+                                        <button onclick="verifyEvidenceItem(${ev.id}, 'VERIFIED')" class="btn btn-success btn-sm">Verify</button>
+                                        <button onclick="verifyEvidenceItem(${ev.id}, 'REJECTED')" class="btn btn-danger btn-sm">Reject</button>
+                                    </div>
+                                </div>
+                                ${previewPath ? `
+                                    <div style="margin-top: 0.5rem;">
+                                        <a href="${previewPath}" target="_blank" style="color: var(--cyan); font-size: 0.85rem;">🔍 View full resolution screenshot</a>
+                                        <br>
+                                        <img src="${previewPath}" alt="Evidence" style="max-height: 220px; border-radius: 6px; margin-top: 0.5rem; border: 1px solid var(--border-color); object-fit: contain;">
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+
+                container.innerHTML = `
+                    ${immediateBanner}
+
+                    <!-- Core Information Card -->
+                    <div class="card">
+                        <div class="card-title">
+                            <span>${escapeHtml(c.title)}</span>
+                            <span class="badge ${badgeClass}">${threat}</span>
+                        </div>
+                        <div class="complaint-meta">
+                            👤 <strong>Reporter:</strong> ${escapeHtml(c.userName)} (${escapeHtml(c.userEmail)}) | 
+                            🏷️ <strong>Category:</strong> ${escapeHtml(c.category)} | 
+                            📱 <strong>Platform:</strong> ${escapeHtml(c.platform)} | 
+                            🕒 <strong>Filed:</strong> ${dateStr}
+                        </div>
+
+                        <div style="margin-top: 1.5rem;">
+                            <label class="form-label">Incident Description</label>
+                            <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(c.description)}</div>
+                        </div>
+
+                        <!-- Status Management -->
+                        <div style="margin-top: 1.5rem; padding: 1.25rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 8px;">
+                            <label class="form-label">Current Investigation Status</label>
+                            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-top: 0.5rem;">
+                                <select id="statusSelect" class="form-select" style="max-width: 280px;">
+                                    <option value="SUBMITTED" ${c.status === 'SUBMITTED' ? 'selected' : ''}>SUBMITTED</option>
+                                    <option value="UNDER_REVIEW" ${c.status === 'UNDER_REVIEW' ? 'selected' : ''}>UNDER_REVIEW</option>
+                                    <option value="EVIDENCE_VERIFICATION" ${c.status === 'EVIDENCE_VERIFICATION' ? 'selected' : ''}>EVIDENCE_VERIFICATION</option>
+                                    <option value="INVESTIGATION" ${c.status === 'INVESTIGATION' ? 'selected' : ''}>INVESTIGATION</option>
+                                    <option value="RESOLVED" ${c.status === 'RESOLVED' ? 'selected' : ''}>RESOLVED</option>
+                                </select>
+                                <button onclick="updateComplaintStatus(${c.id})" class="btn btn-primary btn-sm">Update Status</button>
+                                <span id="statusUpdateMsg" style="color: #a7f3d0; font-size: 0.9rem;"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Severity Analysis Card -->
+                    <div class="card">
+                        <div class="card-title">🤖 Preliminary Severity Analysis</div>
+                        ${analysisHtml}
+                    </div>
+
+                    <!-- Digital Evidence Card -->
+                    <div class="card">
+                        <div class="card-title">📸 Digital Evidence Attachments</div>
+                        ${evidenceHtml}
+                    </div>
+                `;
+
+            } catch (err) {
+                container.innerHTML = `<div class="alert alert-error">Network Error: ${err.message}</div>`;
+            }
+        }
+
+        async function updateComplaintStatus(complaintId) {
+            const status = document.getElementById('statusSelect').value;
+            const msgSpan = document.getElementById('statusUpdateMsg');
+            msgSpan.innerText = 'Updating...';
+
+            try {
+                const response = await fetch(`/api/complaints/${complaintId}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    msgSpan.innerText = '✅ Status updated successfully!';
+                    setTimeout(() => { msgSpan.innerText = ''; }, 3000);
+                } else {
+                    const data = await response.json();
+                    alert('Update failed: ' + (data.error || 'Server error'));
+                    msgSpan.innerText = '';
+                }
+            } catch (err) {
+                alert('Network error: ' + err.message);
+                msgSpan.innerText = '';
+            }
+        }
+
+        async function verifyEvidenceItem(evidenceId, status) {
+            try {
+                const response = await fetch(`/api/evidence/${evidenceId}/verify`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ verificationStatus: status })
+                });
+
+                if (response.ok) {
+                    loadDetails(); // reload details view
+                } else {
+                    const data = await response.json();
+                    alert('Failed to update verification: ' + (data.error || 'Server error'));
+                }
+            } catch (err) {
+                alert('Network error: ' + err.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>

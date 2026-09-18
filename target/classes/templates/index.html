@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CyberShield – Cyberbullying Complaint Management System</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/}" class="active">Home</a>
+            <a th:href="@{/report}">Report Cyberbullying</a>
+            <a th:href="@{/register}">Register</a>
+            <a th:href="@{/officer}">Officer Portal</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <section class="hero">
+            <div class="hero-badge">Next-Gen Incident Response</div>
+            <h1>CyberShield</h1>
+            <p style="font-weight: 600; color: #a5b4fc; margin-bottom: 0.5rem;">Cyberbullying Complaint Management System</p>
+            <p>Empowering individuals with rapid, safe, and confidential cyberbullying reporting. Features automated severity analysis and streamlined investigation workflows.</p>
+
+            <div class="hero-actions">
+                <a th:href="@{/report}" class="btn btn-primary">⚠️ Report Cyberbullying</a>
+                <a th:href="@{/register}" class="btn btn-secondary">📝 Register Account</a>
+                <button onclick="openLoginModal()" class="btn btn-secondary">🔐 Demo Login</button>
+            </div>
+        </section>
+
+        <section class="cards-grid" style="margin-top: 3rem;">
+            <div class="card">
+                <div class="card-title">⚡ Instant Automated Severity</div>
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    Complaints are automatically screened for high-risk cyberbullying terms in English and Tamil to assign preliminary threat levels and triage immediate risks.
+                </p>
+            </div>
+            <div class="card">
+                <div class="card-title">📸 Evidence Preservation</div>
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    Upload screenshot proof directly linked to your case number with tamper-aware verification queues for investigative officers.
+                </p>
+            </div>
+            <div class="card">
+                <div class="card-title">👮 Officer Incident Board</div>
+                <p style="color: var(--text-muted); line-height: 1.6;">
+                    Dedicated triage console for officers to review incoming complaints, update investigation stages, and verify submitted digital evidence.
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Demo Login Modal -->
+    <div id="loginModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="card-title">Demo User / Officer Login</div>
+            <p class="card-subtitle">Select a demo role or sign in with your registered account.</p>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
+                <a th:href="@{/report}" class="btn btn-primary">Continue as Reporter / User</a>
+                <a th:href="@{/officer}" class="btn btn-secondary">Continue to Officer Dashboard</a>
+                <button onclick="closeLoginModal()" class="btn btn-secondary" style="margin-top: 0.5rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        CyberShield © 2026 – College Project Backend & Frontend Architecture
+    </footer>
+
+    <script>
+        function openLoginModal() {
+            document.getElementById('loginModal').style.display = 'flex';
+        }
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

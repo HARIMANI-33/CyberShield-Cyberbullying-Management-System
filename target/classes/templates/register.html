@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register Account – CyberShield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/}">Home</a>
+            <a th:href="@{/report}">Report Cyberbullying</a>
+            <a th:href="@{/register}" class="active">Register</a>
+            <a th:href="@{/officer}">Officer Portal</a>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 580px;">
+        <div class="card">
+            <div class="card-title">Create an Account</div>
+            <p class="card-subtitle">Register to submit complaints, attach digital evidence, and track incident status.</p>
+
+            <div id="alertBox" style="display: none;"></div>
+
+            <form id="registerForm" onsubmit="handleRegister(event)">
+                <div class="form-group">
+                    <label class="form-label" for="name">Full Name</label>
+                    <input type="text" id="name" class="form-control" placeholder="e.g. John Doe" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" placeholder="e.g. user@gmail.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="phone">Phone Number</label>
+                    <input type="tel" id="phone" class="form-control" placeholder="e.g. 9876543210" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Choose a password" required>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Register Account
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield © 2026 – Cyberbullying Complaint Management System
+    </footer>
+
+    <script>
+        async function handleRegister(event) {
+            event.preventDefault();
+            const alertBox = document.getElementById('alertBox');
+            const submitBtn = document.getElementById('submitBtn');
+
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                email: document.getElementById('email').value.trim(),
+                phone: document.getElementById('phone').value.trim(),
+                password: document.getElementById('password').value
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Registering...';
+
+            try {
+                const response = await fetch('/api/users/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    alertBox.className = 'alert alert-success';
+                    alertBox.innerHTML = `
+                        <strong>✅ Registration Successful!</strong><br>
+                        Account created for <strong>${data.name}</strong>.<br>
+                        Your User ID is: <strong>${data.id}</strong> (Save this ID to file complaints).<br>
+                        <a href="/report?userId=${data.id}" class="btn btn-primary btn-sm" style="margin-top: 0.75rem;">Proceed to File Complaint →</a>
+                    `;
+                    alertBox.style.display = 'block';
+                    document.getElementById('registerForm').reset();
+                } else {
+                    alertBox.className = 'alert alert-error';
+                    alertBox.innerHTML = `<strong>⚠️ Registration Failed:</strong> ${data.error || 'Please check your inputs'}`;
+                    alertBox.style.display = 'block';
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-error';
+                alertBox.innerHTML = `<strong>⚠️ Network Error:</strong> ${err.message}`;
+                alertBox.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Register Account';
+            }
+        }
+    </script>
+</body>
+</html>

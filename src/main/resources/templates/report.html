@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Cyberbullying – CyberShield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/}">Home</a>
+            <a th:href="@{/report}" class="active">Report Cyberbullying</a>
+            <a th:href="@{/register}">Register</a>
+            <a th:href="@{/officer}">Officer Portal</a>
+        </div>
+    </nav>
+
+    <main class="container" style="max-width: 760px;">
+        <div class="card">
+            <div class="card-title">File a Cyberbullying Incident Report</div>
+            <p class="card-subtitle">
+                Provide details and evidence regarding the cyberbullying incident. Your report will be automatically analyzed for initial severity.
+            </p>
+
+            <div id="alertBox" style="display: none;"></div>
+
+            <!-- Result Display Card (Initially Hidden) -->
+            <div id="resultCard" style="display: none; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1.5rem; margin-bottom: 2rem;">
+                <h3 style="color: #38bdf8; margin-bottom: 0.5rem;">Incident Triage Result</h3>
+                
+                <div id="priorityWarning" class="alert-warning-banner" style="display: none;">
+                    <span style="font-size: 1.5rem;">🚨</span>
+                    <div>
+                        <strong style="font-size: 1.1rem; letter-spacing: 0.5px;">IMMEDIATE ATTENTION</strong><br>
+                        High or Critical threat level detected. This incident has been prioritized for urgent officer review.
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin: 1.25rem 0;">
+                    <div>
+                        <span class="form-label">Complaint Number</span>
+                        <div id="resComplaintNumber" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: var(--cyan);"></div>
+                    </div>
+                    <div>
+                        <span class="form-label">Preliminary Severity</span>
+                        <div id="resSeverity"></div>
+                    </div>
+                    <div>
+                        <span class="form-label">Risk Score</span>
+                        <div id="resRiskScore" style="font-size: 1.2rem; font-weight: 700;"></div>
+                    </div>
+                    <div>
+                        <span class="form-label">Priority</span>
+                        <div id="resPriority" style="font-size: 1rem; font-weight: 600;"></div>
+                    </div>
+                    <div>
+                        <span class="form-label">Complaint Status</span>
+                        <div id="resStatus" style="font-size: 1rem; font-weight: 600; color: #a5b4fc;"></div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.05); padding: 0.75rem 1rem; border-radius: 6px; font-size: 0.85rem; color: #cbd5e1; margin-top: 1rem;">
+                    ℹ️ <strong>Preliminary automated assessment:</strong> <em>The risk score and severity are generated via automated algorithmic analysis. The investigating officer makes the final review and disposition.</em>
+                </div>
+
+                <div id="evidenceUploadStatus" style="margin-top: 0.75rem; font-size: 0.9rem; color: #a7f3d0;"></div>
+
+                <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem;">
+                    <button onclick="resetComplaintForm()" class="btn btn-secondary btn-sm">File Another Complaint</button>
+                    <a id="viewDetailsLink" href="#" class="btn btn-primary btn-sm">View Full Details →</a>
+                </div>
+            </div>
+
+            <!-- Complaint Form -->
+            <form id="complaintForm" onsubmit="handleComplaintSubmit(event)">
+                <div class="form-group">
+                    <label class="form-label" for="userId">Reporter User ID</label>
+                    <input type="number" id="userId" class="form-control" placeholder="Enter your registered User ID (e.g. 1)" required>
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">Don't have a User ID? <a th:href="@{/register}" style="color: var(--cyan);">Register here first</a>.</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="title">Complaint Title</label>
+                    <input type="text" id="title" class="form-control" placeholder="Brief summary, e.g. Threatening messages on Instagram" required>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label" for="category">Incident Category</label>
+                        <select id="category" class="form-select" required>
+                            <option value="">Select Category</option>
+                            <option value="Threatening Messages">Threatening Messages</option>
+                            <option value="Online Harassment">Online Harassment</option>
+                            <option value="Cyberstalking">Cyberstalking</option>
+                            <option value="Abusive Messages">Abusive Messages</option>
+                            <option value="Fake Profile">Fake Profile</option>
+                            <option value="Blackmail">Blackmail</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="platform">Platform / App</label>
+                        <select id="platform" class="form-select" required>
+                            <option value="">Select Platform</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Facebook">Facebook</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="X">X (Twitter)</option>
+                            <option value="YouTube">YouTube</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="description">Incident Description</label>
+                    <textarea id="description" class="form-control" placeholder="Provide detailed explanation of the harassment or cyberbullying incident..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="evidenceFile">Screenshot Evidence (PNG, JPG, JPEG)</label>
+                    <input type="file" id="evidenceFile" class="form-control" accept="image/png, image/jpeg, image/jpg">
+                    <small style="color: var(--text-muted); font-size: 0.8rem;">Optional screenshot evidence to substantiate the claim.</small>
+                </div>
+
+                <button type="submit" id="submitBtn" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                    Submit Complaint for Analysis
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield © 2026 – Cyberbullying Complaint Management System
+    </footer>
+
+    <script>
+        // Auto-fill userId from URL parameter if present (e.g. from registration page)
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const uid = urlParams.get('userId');
+            if (uid) {
+                document.getElementById('userId').value = uid;
+            }
+        });
+
+        async function handleComplaintSubmit(event) {
+            event.preventDefault();
+            const alertBox = document.getElementById('alertBox');
+            const submitBtn = document.getElementById('submitBtn');
+            const fileInput = document.getElementById('evidenceFile');
+
+            alertBox.style.display = 'none';
+
+            const payload = {
+                userId: parseInt(document.getElementById('userId').value),
+                title: document.getElementById('title').value.trim(),
+                category: document.getElementById('category').value,
+                platform: document.getElementById('platform').value,
+                description: document.getElementById('description').value.trim()
+            };
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Submitting & Analyzing...';
+
+            try {
+                // 1. Submit complaint
+                const response = await fetch('/api/complaints', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    alertBox.className = 'alert alert-error';
+                    alertBox.innerHTML = `<strong>⚠️ Submission Failed:</strong> ${data.error || 'Check input details'}`;
+                    alertBox.style.display = 'block';
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Submit Complaint for Analysis';
+                    return;
+                }
+
+                // 2. Upload screenshot evidence if a file was chosen
+                const complaintId = data.id;
+                let evidenceStatusText = '';
+
+                if (fileInput.files.length > 0 && complaintId) {
+                    const formData = new FormData();
+                    formData.append('file', fileInput.files[0]);
+
+                    try {
+                        const evResponse = await fetch(`/api/complaints/${complaintId}/evidence`, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const evData = await evResponse.json();
+                        if (evResponse.ok) {
+                            evidenceStatusText = `📸 Screenshot "${evData.fileName}" uploaded and pending verification.`;
+                        } else {
+                            evidenceStatusText = `⚠️ Screenshot upload failed: ${evData.error}`;
+                        }
+                    } catch (evErr) {
+                        evidenceStatusText = `⚠️ Screenshot upload error: ${evErr.message}`;
+                    }
+                }
+
+                // 3. Render Triage Results
+                document.getElementById('resComplaintNumber').innerText = data.complaintNumber;
+                
+                // Severity badge styling
+                const sev = data.detectedSeverity ? data.detectedSeverity.toUpperCase() : 'LOW';
+                let sevBadgeClass = 'badge-low';
+                if (sev === 'MEDIUM') sevBadgeClass = 'badge-medium';
+                if (sev === 'HIGH') sevBadgeClass = 'badge-high';
+                if (sev === 'CRITICAL') sevBadgeClass = 'badge-critical';
+
+                document.getElementById('resSeverity').innerHTML = `<span class="badge ${sevBadgeClass}">${sev}</span>`;
+                document.getElementById('resRiskScore').innerText = data.riskScore ?? 0;
+                
+                const isImmediate = data.priority === 'IMMEDIATE_ATTENTION' || sev === 'HIGH' || sev === 'CRITICAL';
+                if (isImmediate) {
+                    document.getElementById('resPriority').innerHTML = `<span class="badge badge-critical">🚨 IMMEDIATE ATTENTION</span>`;
+                } else {
+                    document.getElementById('resPriority').innerHTML = `<span class="badge" style="background: rgba(255,255,255,0.08); color: #cbd5e1;">NORMAL REVIEW</span>`;
+                }
+
+                document.getElementById('resStatus').innerText = data.status || 'SUBMITTED';
+
+                // Immediate Attention Banner
+                document.getElementById('priorityWarning').style.display = isImmediate ? 'flex' : 'none';
+
+                if (evidenceStatusText) {
+                    document.getElementById('evidenceUploadStatus').innerText = evidenceStatusText;
+                }
+
+                if (complaintId) {
+                    document.getElementById('viewDetailsLink').href = `/details?id=${complaintId}`;
+                }
+
+                document.getElementById('resultCard').style.display = 'block';
+                document.getElementById('complaintForm').style.display = 'none';
+
+            } catch (err) {
+                alertBox.className = 'alert alert-error';
+                alertBox.innerHTML = `<strong>⚠️ Network Error:</strong> ${err.message}`;
+                alertBox.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Submit Complaint for Analysis';
+            }
+        }
+
+        function resetComplaintForm() {
+            document.getElementById('complaintForm').reset();
+            document.getElementById('complaintForm').style.display = 'block';
+            document.getElementById('resultCard').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

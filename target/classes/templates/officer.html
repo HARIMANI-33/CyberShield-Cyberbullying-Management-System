@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Officer Incident Dashboard – CyberShield</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/}">Home</a>
+            <a th:href="@{/report}">Report Cyberbullying</a>
+            <a th:href="@{/register}">Register</a>
+            <a th:href="@{/officer}" class="active">Officer Portal</a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem;">
+            <div>
+                <h1 style="font-size: 2rem; font-weight: 700;">Officer Incident Dashboard</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Monitor, triage, and update the investigation status of reported cyberbullying incidents.</p>
+            </div>
+            <button onclick="loadComplaints()" class="btn btn-secondary btn-sm">🔄 Refresh Feed</button>
+        </div>
+
+        <div id="alertBox" style="display: none;"></div>
+
+        <!-- Complaint Cards Grid -->
+        <div id="complaintsGrid" class="cards-grid">
+            <div style="color: var(--text-muted);">Loading complaints feed...</div>
+        </div>
+    </main>
+
+    <!-- Quick Status Update Modal -->
+    <div id="statusModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="card-title">Update Investigation Status</div>
+            <p class="card-subtitle" id="modalComplaintInfo">Updating status for complaint</p>
+
+            <input type="hidden" id="modalComplaintId">
+
+            <div class="form-group">
+                <label class="form-label" for="modalStatusSelect">Select New Status</label>
+                <select id="modalStatusSelect" class="form-select">
+                    <option value="SUBMITTED">SUBMITTED</option>
+                    <option value="UNDER_REVIEW">UNDER_REVIEW</option>
+                    <option value="EVIDENCE_VERIFICATION">EVIDENCE_VERIFICATION</option>
+                    <option value="INVESTIGATION">INVESTIGATION</option>
+                    <option value="RESOLVED">RESOLVED</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem;">
+                <button onclick="closeStatusModal()" class="btn btn-secondary">Cancel</button>
+                <button onclick="saveStatusUpdate()" class="btn btn-primary">Save Status</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        CyberShield © 2026 – Cyberbullying Complaint Management System
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', loadComplaints);
+
+        async function loadComplaints() {
+            const grid = document.getElementById('complaintsGrid');
+            const alertBox = document.getElementById('alertBox');
+            alertBox.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/complaints');
+                const complaints = await response.json();
+
+                if (!response.ok) {
+                    grid.innerHTML = `<div class="alert alert-error">Failed to load complaints: ${complaints.error || 'Server error'}</div>`;
+                    return;
+                }
+
+                if (complaints.length === 0) {
+                    grid.innerHTML = `
+                        <div class="card" style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem;">
+                            <h3>No Complaints Registered Yet</h3>
+                            <p style="color: var(--text-muted); margin: 1rem 0;">New cyberbullying reports will appear here automatically.</p>
+                            <a href="/report" class="btn btn-primary btn-sm">Create Demo Complaint</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                grid.innerHTML = complaints.map(c => {
+                    const threat = (c.threatLevel || 'LOW').toUpperCase();
+                    let badgeClass = 'badge-low';
+                    if (threat === 'MEDIUM') badgeClass = 'badge-medium';
+                    if (threat === 'HIGH') badgeClass = 'badge-high';
+                    if (threat === 'CRITICAL') badgeClass = 'badge-critical';
+
+                    const isImmediate = threat === 'HIGH' || threat === 'CRITICAL' || c.priority === 'IMMEDIATE_ATTENTION';
+                    const priorityBadge = isImmediate 
+                        ? `<span class="badge badge-critical" style="margin-left: 0.5rem;">🚨 IMMEDIATE ATTENTION</span>` 
+                        : `<span class="badge" style="background: rgba(255,255,255,0.08); color: #cbd5e1; margin-left: 0.5rem;">NORMAL</span>`;
+
+                    const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : 'N/A';
+
+                    return `
+                        <div class="complaint-card">
+                            <div>
+                                <div class="complaint-header">
+                                    <span class="complaint-number">${c.complaintNumber}</span>
+                                    <div>
+                                        <span class="badge ${badgeClass}">${threat}</span>
+                                        ${priorityBadge}
+                                    </div>
+                                </div>
+                                <h3 style="font-size: 1.15rem; margin-bottom: 0.5rem; color: #fff;">${escapeHtml(c.title)}</h3>
+                                <div class="complaint-meta">
+                                    👤 Reporter: <strong>${escapeHtml(c.userName)}</strong><br>
+                                    🕒 Filed: ${dateStr}
+                                </div>
+                                <div style="margin-bottom: 1.25rem;">
+                                    <span class="badge badge-status">Status: ${c.status}</span>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; margin-top: 1rem; border-top: 1px solid var(--border-color); padding-top: 1rem;">
+                                <a href="/details?id=${c.id}" class="btn btn-primary btn-sm" style="flex: 1;">View Details</a>
+                                <button onclick="openStatusModal(${c.id}, '${c.complaintNumber}', '${c.status}')" class="btn btn-secondary btn-sm" style="flex: 1;">Update Status</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                grid.innerHTML = `<div class="alert alert-error">Network Error: ${err.message}</div>`;
+            }
+        }
+
+        function openStatusModal(id, number, currentStatus) {
+            document.getElementById('modalComplaintId').value = id;
+            document.getElementById('modalComplaintInfo').innerText = `Updating status for Case ${number}`;
+            document.getElementById('modalStatusSelect').value = currentStatus;
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+
+        function closeStatusModal() {
+            document.getElementById('statusModal').style.display = 'none';
+        }
+
+        async function saveStatusUpdate() {
+            const id = document.getElementById('modalComplaintId').value;
+            const status = document.getElementById('modalStatusSelect').value;
+
+            try {
+                const response = await fetch(`/api/complaints/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+
+                if (response.ok) {
+                    closeStatusModal();
+                    loadComplaints();
+                } else {
+                    const data = await response.json();
+                    alert('Update failed: ' + (data.error || 'Server error'));
+                }
+            } catch (err) {
+                alert('Network error: ' + err.message);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+</body>
+</html>
