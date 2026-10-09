@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard – CyberShield</title>
+    <!-- External stylesheet with proper fallback -->
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Embedded Fail-Safe CSS -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.88);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(56, 189, 248, 0.6);
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.14) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation: STRICTLY USER NAVIGATION */
+        .navbar {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #38bdf8;
+        }
+
+        .user-portal-badge {
+            font-size: 0.88rem;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            color: #38bdf8;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-nav-logout {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 0.45rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-nav-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        /* Container */
+        .container-wide {
+            max-width: 1320px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3.5rem 1.75rem 4rem;
+            flex: 1;
+        }
+
+        /* Dashboard Hero */
+        .dashboard-hero {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .dashboard-hero h1 {
+            font-size: 2.85rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.65rem;
+            letter-spacing: -0.03em;
+        }
+
+        .dashboard-hero h1 span {
+            color: #38bdf8;
+        }
+
+        .dashboard-hero p {
+            color: var(--text-muted);
+            font-size: 1.15rem;
+            max-width: 720px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* EXACT REQUIREMENT: 4 MODULES IN ONE HORIZONTAL ROW ON DESKTOP */
+        .modules-horizontal-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.75rem;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        @media (max-width: 1100px) {
+            .modules-horizontal-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .modules-horizontal-row {
+                grid-template-columns: 1fr;
+            }
+            .navbar {
+                padding: 1rem 1.25rem;
+            }
+            .container-wide {
+                padding: 2rem 1rem 3rem;
+            }
+            .dashboard-hero h1 {
+                font-size: 2.2rem;
+            }
+        }
+
+        /* Module Action Card */
+        .module-action-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.95) 0%, rgba(13, 22, 45, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 1.75rem;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none !important;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+        }
+
+        .module-action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0284c7, #38bdf8);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .module-action-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6), 0 0 25px rgba(14, 165, 233, 0.25);
+        }
+
+        .module-action-card:hover::before {
+            opacity: 1;
+        }
+
+        .module-card-icon-wrap {
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.3rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+
+        .module-action-card:hover .module-card-icon-wrap {
+            transform: scale(1.12);
+        }
+
+        .icon-report {
+            background: rgba(2, 132, 199, 0.18);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.25);
+        }
+
+        .icon-track {
+            background: rgba(99, 102, 241, 0.18);
+            border: 1px solid rgba(129, 140, 248, 0.4);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.25);
+        }
+
+        .icon-profile {
+            background: rgba(16, 185, 129, 0.18);
+            border: 1px solid rgba(52, 211, 153, 0.4);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+        }
+
+        .icon-notif {
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            box-shadow: 0 0 20px rgba(245, 158, 11, 0.25);
+        }
+
+        .module-card-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.65rem;
+            letter-spacing: -0.02em;
+        }
+
+        .module-card-desc {
+            color: var(--text-muted);
+            font-size: 0.94rem;
+            line-height: 1.55;
+            margin-bottom: 1.85rem;
+            flex: 1;
+            padding: 0 0.5rem;
+        }
+
+        .module-open-btn {
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #38bdf8 !important;
+            padding: 0.65rem 1.85rem;
+            border-radius: 9999px;
+            font-size: 0.94rem;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.25s ease;
+            text-decoration: none !important;
+            margin-top: auto;
+        }
+
+        .module-action-card:hover .module-open-btn {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #ffffff !important;
+            box-shadow: 0 4px 14px rgba(14, 165, 233, 0.45);
+            gap: 0.75rem;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- USER-ONLY TOP NAVIGATION (NO ADMIN REFERENCES) -->
+    <nav class="navbar">
+        <a th:href="@{/user/dashboard}" href="/user/dashboard" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/user/dashboard}" href="/user/dashboard" class="nav-link active">Dashboard</a>
+            <a th:href="@{/user/track}" href="/user/track" class="nav-link">Track Complaints</a>
+            <a th:href="@{/user/profile}" href="/user/profile" class="nav-link">Profile</a>
+            <a th:href="@{/user/notifications}" href="/user/notifications" class="nav-link">Notifications</a>
+            <span class="user-portal-badge" id="userBadgeDisplay">
+                👤 User Portal
+            </span>
+            <button onclick="handleLogout()" class="btn-nav-logout">
+                🚪 Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="container-wide">
+        <!-- Dashboard Hero Header -->
+        <div class="dashboard-hero">
+            <h1>Welcome, <span id="welcomeUserName">Hari</span> 👋</h1>
+            <p>Manage your cyberbullying reports, track case progress, and stay updated.</p>
+        </div>
+
+        <!-- STRICTLY ONE HORIZONTAL ROW OF 4 MODULES ON DESKTOP -->
+        <div class="modules-horizontal-row">
+            
+            <!-- MODULE 1: REPORT COMPLAINT -->
+            <a th:href="@{/report}" href="/report" class="module-action-card">
+                <div class="module-card-icon-wrap icon-report">
+                    📝
+                </div>
+                <div class="module-card-title">Report Complaint</div>
+                <div class="module-card-desc">
+                    Create and submit a new cyberbullying complaint.
+                </div>
+                <div class="module-open-btn">
+                    Open &rarr;
+                </div>
+            </a>
+
+            <!-- MODULE 2: TRACK COMPLAINTS -->
+            <a th:href="@{/user/track}" href="/user/track" class="module-action-card">
+                <div class="module-card-icon-wrap icon-track">
+                    📋
+                </div>
+                <div class="module-card-title">Track Complaints</div>
+                <div class="module-card-desc">
+                    View your submitted complaints, current status, priority and investigation progress.
+                </div>
+                <div class="module-open-btn">
+                    Open &rarr;
+                </div>
+            </a>
+
+            <!-- MODULE 3: MY PROFILE -->
+            <a th:href="@{/user/profile}" href="/user/profile" class="module-action-card">
+                <div class="module-card-icon-wrap icon-profile">
+                    👤
+                </div>
+                <div class="module-card-title">My Profile</div>
+                <div class="module-card-desc">
+                    View your account information and personal details.
+                </div>
+                <div class="module-open-btn">
+                    Open &rarr;
+                </div>
+            </a>
+
+            <!-- MODULE 4: NOTIFICATIONS -->
+            <a th:href="@{/user/notifications}" href="/user/notifications" class="module-action-card">
+                <div class="module-card-icon-wrap icon-notif">
+                    🔔
+                </div>
+                <div class="module-card-title">Notifications</div>
+                <div class="module-card-desc">
+                    View complaint updates, evidence verification updates and system notifications.
+                </div>
+                <div class="module-open-btn">
+                    Open &rarr;
+                </div>
+            </a>
+
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Confidential User Portal
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch('/api/users/current');
+                if (res.ok) {
+                    const user = await res.json();
+                    if (user && user.name) {
+                        document.getElementById('welcomeUserName').innerText = user.name;
+                        document.getElementById('userBadgeDisplay').innerText = `👤 ${user.name}`;
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            const raw = localStorage.getItem('cyberShield_user');
+            if (raw) {
+                try {
+                    const u = JSON.parse(raw);
+                    if (u.name) {
+                        document.getElementById('welcomeUserName').innerText = u.name;
+                        document.getElementById('userBadgeDisplay').innerText = `👤 ${u.name}`;
+                    }
+                } catch (e) {}
+            }
+        });
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/users/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('cyberShield_user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

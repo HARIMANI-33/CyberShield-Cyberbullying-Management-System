@@ -58,4 +58,14 @@ public class CreateComplaintRequest {
     public void setDescription(String description) {
         this.description = description;
     }
+
+    private java.time.LocalDateTime incidentDateTime;
+
+    public java.time.LocalDateTime getIncidentDateTime() {
+        return incidentDateTime;
+    }
+
+    public void setIncidentDateTime(java.time.LocalDateTime incidentDateTime) {
+        this.incidentDateTime = incidentDateTime;
+    }
 }

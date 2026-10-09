@@ -23,11 +23,14 @@ public class EvidenceService {
 
     private final EvidenceRepository evidenceRepository;
     private final ComplaintRepository complaintRepository;
+    private final NotificationService notificationService;
 
     public EvidenceService(EvidenceRepository evidenceRepository,
-                           ComplaintRepository complaintRepository) {
+                           ComplaintRepository complaintRepository,
+                           NotificationService notificationService) {
         this.evidenceRepository = evidenceRepository;
         this.complaintRepository = complaintRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -62,6 +65,16 @@ public class EvidenceService {
 
         Evidence saved = evidenceRepository.save(evidence);
 
+        if (complaint.getUser() != null) {
+            notificationService.notifyUser(
+                    complaint.getUser(),
+                    "Evidence Received: " + complaint.getComplaintNumber(),
+                    "Screenshot proof \"" + originalFilename + "\" has been attached and logged for officer review.",
+                    "EVIDENCE_VERIFIED",
+                    complaint.getComplaintNumber()
+            );
+        }
+
         return new EvidenceResponse(
                 saved.getId(),
                 "Evidence uploaded successfully",
@@ -73,6 +86,11 @@ public class EvidenceService {
 
     @Transactional
     public EvidenceResponse verifyEvidence(Long evidenceId, String status) {
+        return verifyEvidence(evidenceId, status, null);
+    }
+
+    @Transactional
+    public EvidenceResponse verifyEvidence(Long evidenceId, String status, String remarks) {
         if (status == null || (!status.equalsIgnoreCase("VERIFIED") && !status.equalsIgnoreCase("REJECTED"))) {
             throw new IllegalArgumentException("Invalid verification status. Allowed values: VERIFIED, REJECTED");
         }
@@ -82,6 +100,41 @@ public class EvidenceService {
 
         evidence.setVerificationStatus(status.toUpperCase());
         Evidence updated = evidenceRepository.save(evidence);
+
+        Complaint complaint = evidence.getComplaint();
+        if (complaint != null) {
+            // If verified, advance complaint status to EVIDENCE_VERIFIED if currently SUBMITTED or UNDER_REVIEW
+            if (status.equalsIgnoreCase("VERIFIED")) {
+                if ("SUBMITTED".equalsIgnoreCase(complaint.getStatus()) || "PENDING".equalsIgnoreCase(complaint.getStatus()) 
+                        || "UNDER_REVIEW".equalsIgnoreCase(complaint.getStatus()) || "REVIEWED".equalsIgnoreCase(complaint.getStatus())) {
+                    complaint.setStatus("EVIDENCE_VERIFIED");
+                }
+            }
+
+            // Record remarks if provided
+            if (remarks != null && !remarks.isBlank()) {
+                String existing = complaint.getAdminRemarks();
+                String note = String.format("[Evidence %s] %s", updated.getVerificationStatus(), remarks.trim());
+                complaint.setAdminRemarks(existing != null && !existing.isBlank() ? (existing + "\n" + note) : note);
+            }
+
+            complaintRepository.save(complaint);
+
+            if (complaint.getUser() != null) {
+                String complaintNum = complaint.getComplaintNumber();
+                String notifMsg = "Digital proof \"" + updated.getFileName() + "\" was marked " + updated.getVerificationStatus() + " by investigating officer.";
+                if (remarks != null && !remarks.isBlank()) {
+                    notifMsg += " Officer note: " + remarks.trim();
+                }
+                notificationService.notifyUser(
+                        complaint.getUser(),
+                        "Evidence " + updated.getVerificationStatus() + ": " + complaintNum,
+                        notifMsg,
+                        "EVIDENCE_VERIFIED",
+                        complaintNum
+                );
+            }
+        }
 
         return new EvidenceResponse(
                 updated.getId(),

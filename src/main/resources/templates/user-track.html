@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Complaints – CyberShield</title>
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+
+    <!-- Embedded Fail-Safe CSS -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.88);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(56, 189, 248, 0.6);
+            --primary: #0284c7;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.14) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation: STRICTLY USER NAVIGATION */
+        .navbar {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #38bdf8;
+        }
+
+        .user-portal-badge {
+            font-size: 0.88rem;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            color: #38bdf8;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-nav-logout {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 0.45rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-nav-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        /* Container */
+        .container-wide {
+            max-width: 1280px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2.5rem 1.75rem 4rem;
+            flex: 1;
+        }
+
+        /* Header bar */
+        .page-header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1.25rem;
+        }
+
+        .page-header-bar h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.35rem;
+        }
+
+        .page-header-bar p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .btn-report-new {
+            background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+            color: #ffffff;
+            padding: 0.75rem 1.4rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+            transition: all 0.25s ease;
+        }
+
+        .btn-report-new:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+            filter: brightness(1.1);
+        }
+
+        /* Filter bar */
+        .filter-card {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 1.1rem 1.4rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 240px;
+            background: rgba(10, 15, 29, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            color: #ffffff;
+            font-size: 0.92rem;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--cyan);
+        }
+
+        .filter-select {
+            background: rgba(10, 15, 29, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            padding: 0.65rem 1rem;
+            color: #ffffff;
+            font-size: 0.92rem;
+        }
+
+        /* Cards Grid */
+        .complaints-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 1.75rem;
+        }
+
+        /* Case Card */
+        .case-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.92) 0%, rgba(13, 22, 45, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-md);
+            padding: 1.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .case-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(14, 165, 233, 0.15);
+        }
+
+        .case-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.85rem;
+        }
+
+        .case-id-badge {
+            font-family: monospace;
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--cyan);
+            letter-spacing: 0.5px;
+        }
+
+        .case-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+            line-height: 1.4;
+        }
+
+        .case-meta-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .case-badges-row {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .case-desc {
+            color: #cbd5e1;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 1.25rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Progression Stepper on each card: Submitted -> Under Review -> Investigating -> Resolved */
+        .case-stepper {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(10, 15, 29, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 0.65rem 0.85rem;
+            margin-bottom: 1.25rem;
+            font-size: 0.75rem;
+        }
+
+        .stepper-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            color: #64748b;
+            font-weight: 600;
+            font-size: 0.72rem;
+            min-width: 52px;
+            text-align: center;
+        }
+
+        .stepper-node.active {
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
+        .stepper-node.completed {
+            color: #34d399;
+            font-weight: 700;
+        }
+
+        .stepper-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 1.5px solid #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            transition: all 0.2s;
+            color: #64748b;
+        }
+
+        .stepper-node.active .stepper-dot {
+            background: #0284c7;
+            border-color: #38bdf8;
+            color: #ffffff;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.6);
+        }
+
+        .stepper-node.completed .stepper-dot {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: #34d399;
+            color: #34d399;
+        }
+
+        .stepper-line {
+            flex: 1;
+            height: 2px;
+            background: #334155;
+            margin: 0 0.2rem 1.1rem;
+        }
+
+        .stepper-line.completed {
+            background: #34d399;
+        }
+
+        .case-footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+
+        .case-updated {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .btn-view-timeline {
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            color: #38bdf8;
+            padding: 0.45rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .btn-view-timeline:hover {
+            background: #0284c7;
+            color: #ffffff;
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .badge-submitted {
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+
+        .badge-review {
+            background: rgba(147, 51, 234, 0.18);
+            border: 1px solid rgba(147, 51, 234, 0.4);
+            color: #c084fc;
+        }
+
+        .badge-investigating {
+            background: rgba(245, 158, 11, 0.18);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+        }
+
+        .badge-action {
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            color: #a5b4fc;
+        }
+
+        .badge-resolved {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+
+        .badge-critical {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #f87171;
+        }
+
+        .badge-high {
+            background: rgba(249, 115, 22, 0.2);
+            border: 1px solid rgba(249, 115, 22, 0.4);
+            color: #fb923c;
+        }
+
+        .badge-medium {
+            background: rgba(234, 179, 8, 0.2);
+            border: 1px solid rgba(234, 179, 8, 0.4);
+            color: #fde047;
+        }
+
+        .badge-low {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        /* MODAL */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(5, 10, 24, 0.85);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 1.25rem;
+        }
+
+        .modal-card {
+            background: linear-gradient(180deg, #131d38 0%, #0c1427 100%);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            border-radius: 20px;
+            max-width: 650px;
+            width: 100%;
+            padding: 2.25rem;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+            position: relative;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- USER-ONLY TOP NAVIGATION (NO ADMIN REFERENCES) -->
+    <nav class="navbar">
+        <a th:href="@{/user/dashboard}" href="/user/dashboard" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/user/dashboard}" href="/user/dashboard" class="nav-link">Dashboard</a>
+            <a th:href="@{/user/track}" href="/user/track" class="nav-link active">Track Complaints</a>
+            <a th:href="@{/user/profile}" href="/user/profile" class="nav-link">Profile</a>
+            <a th:href="@{/user/notifications}" href="/user/notifications" class="nav-link">Notifications</a>
+            <span class="user-portal-badge" id="userBadgeDisplay">
+                👤 User Portal
+            </span>
+            <button onclick="handleLogout()" class="btn-nav-logout">
+                🚪 Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="container-wide">
+        <!-- Top Action Bar -->
+        <div class="page-header-bar">
+            <div>
+                <a th:href="@{/user/dashboard}" href="/user/dashboard" style="color: #38bdf8; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.88rem; margin-bottom: 0.5rem;">
+                    &larr; Back to Dashboard
+                </a>
+                <h1>Track Complaints 📋</h1>
+                <p>Monitor live investigation status, evidence verification, and platform escalation progress for all your filed reports.</p>
+            </div>
+            <div>
+                <a th:href="@{/report}" href="/report" class="btn-report-new">
+                    📝 Report New Incident
+                </a>
+            </div>
+        </div>
+
+        <!-- Search & Filter Bar -->
+        <div class="filter-card">
+            <input type="text" id="trackSearchInput" oninput="filterUserComplaints()" class="search-input" placeholder="🔍 Search by Complaint ID, Platform, or keywords...">
+            <select id="trackStatusFilter" onchange="filterUserComplaints()" class="filter-select">
+                <option value="ALL">All Statuses</option>
+                <option value="PENDING">PENDING</option>
+                <option value="REVIEWED">REVIEWED</option>
+                <option value="ACCEPTED">ACCEPTED</option>
+                <option value="SUBMITTED">SUBMITTED</option>
+                <option value="UNDER_REVIEW">UNDER_REVIEW</option>
+                <option value="INVESTIGATION">INVESTIGATION</option>
+                <option value="EVIDENCE_VERIFIED">EVIDENCE_VERIFIED</option>
+                <option value="ACTION_TAKEN">ACTION_TAKEN</option>
+                <option value="RESOLVED">RESOLVED</option>
+                <option value="REJECTED">REJECTED</option>
+            </select>
+            <select id="trackSeverityFilter" onchange="filterUserComplaints()" class="filter-select">
+                <option value="ALL">All Threat Levels</option>
+                <option value="CRITICAL">CRITICAL</option>
+                <option value="HIGH">HIGH</option>
+                <option value="MEDIUM">MEDIUM</option>
+                <option value="LOW">LOW</option>
+            </select>
+        </div>
+
+        <!-- Case Cards Container -->
+        <div id="userComplaintsContainer">
+            <div style="text-align: center; padding: 3.5rem; color: var(--text-muted);">
+                🔄 Loading your filed complaints...
+            </div>
+        </div>
+
+        <!-- Detailed Timeline Modal -->
+        <div id="timelineModal" class="modal-overlay">
+            <div class="modal-card">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.25rem;">
+                    <div>
+                        <span id="modalCaseNumber" style="font-family: monospace; font-size: 1.25rem; font-weight: 800; color: #38bdf8;"></span>
+                        <h3 id="modalCaseTitle" style="color: #fff; margin-top: 0.25rem; font-size: 1.2rem;"></h3>
+                    </div>
+                    <button onclick="closeTimelineModal()" style="background: none; border: none; color: #94a3b8; font-size: 1.5rem; cursor: pointer; padding: 0.2rem 0.5rem;">&times;</button>
+                </div>
+
+                <div style="background: rgba(10, 15, 29, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Platform</span>
+                            <strong id="modalPlatform" style="color: #fff;"></strong>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Current Status</span>
+                            <div id="modalStatusBadge"></div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Threat Severity</span>
+                            <div id="modalSeverityBadge"></div>
+                        </div>
+                        <div>
+                            <span style="font-size: 0.78rem; color: #94a3b8; display: block;">Submitted Date</span>
+                            <span id="modalDate" style="color: #cbd5e1; font-size: 0.88rem;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Visual Progress Timeline -->
+                    <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
+                        <span style="font-size: 0.8rem; color: #38bdf8; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 0.75rem;">
+                            Live Progress Timeline
+                        </span>
+                        <div id="modalVisualTimeline"></div>
+                    </div>
+
+                    <div style="margin-bottom: 0.85rem;">
+                        <span style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Incident Description</span>
+                        <p id="modalDesc" style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 6px;"></p>
+                    </div>
+
+                    <div id="modalEvidenceBox" style="margin-bottom: 0.85rem; display: none;">
+                        <span style="font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 0.25rem;">Evidence Status</span>
+                        <div id="modalEvidenceContent" style="color: #6ee7b7; font-size: 0.9rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); padding: 0.65rem 0.85rem; border-radius: 6px;"></div>
+                    </div>
+
+                    <div id="modalRemarksBox" style="display: none;">
+                        <span style="font-size: 0.8rem; color: #38bdf8; display: block; margin-bottom: 0.25rem;">Officer Investigation Remarks</span>
+                        <p id="modalOfficerRemarks" style="color: #e2e8f0; font-size: 0.9rem; line-height: 1.5; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.25); padding: 0.75rem; border-radius: 6px;"></p>
+                    </div>
+                </div>
+
+                <div style="text-align: right;">
+                    <button onclick="closeTimelineModal()" class="btn btn-secondary btn-sm" style="padding: 0.55rem 1.4rem;">Close</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Confidential User Portal
+    </footer>
+
+    <script>
+        let allUserComplaints = [];
+        let currentUserId = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await identifyCurrentUser();
+            await loadUserComplaints();
+        });
+
+        async function identifyCurrentUser() {
+            try {
+                const res = await fetch('/api/users/current');
+                if (res.ok) {
+                    const user = await res.json();
+                    if (user && user.id) {
+                        currentUserId = user.id;
+                        document.getElementById('userBadgeDisplay').innerText = `👤 ${user.name}`;
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            const raw = localStorage.getItem('cyberShield_user');
+            if (raw) {
+                try {
+                    const u = JSON.parse(raw);
+                    if (u.id) currentUserId = u.id;
+                    if (u.name) document.getElementById('userBadgeDisplay').innerText = `👤 ${u.name}`;
+                } catch (e) {}
+            }
+        }
+
+        async function loadUserComplaints() {
+            const container = document.getElementById('userComplaintsContainer');
+            try {
+                let url = '/api/complaints';
+                if (currentUserId) {
+                    url = `/api/complaints/user/${currentUserId}`;
+                }
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Failed to fetch complaints');
+                allUserComplaints = await res.json();
+                renderUserComplaints(allUserComplaints);
+            } catch (err) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 3rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <p style="color: var(--text-muted); margin-bottom: 1rem;">No complaints found or session expired.</p>
+                        <a href="/report" class="btn-report-new">📝 File First Complaint</a>
+                    </div>
+                `;
+            }
+        }
+
+        function getStepIndex(status) {
+            const s = (status || 'PENDING').toUpperCase();
+            if (s === 'PENDING' || s === 'SUBMITTED') return 1;
+            if (s === 'REVIEWED' || s === 'UNDER_REVIEW') return 2;
+            if (s === 'ACCEPTED') return 3;
+            if (s === 'INVESTIGATION' || s === 'INVESTIGATING' || s === 'EVIDENCE_VERIFIED' || s === 'ACTION_TAKEN') return 4;
+            if (s === 'RESOLVED') return 5;
+            return 1;
+        }
+
+        function renderUserComplaints(list) {
+            const container = document.getElementById('userComplaintsContainer');
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 4rem 1.5rem; background: var(--bg-card); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                        <div style="font-size: 3.5rem; margin-bottom: 1rem;">🛡️</div>
+                        <h2 style="color: #fff; margin-bottom: 0.5rem; font-size: 1.5rem;">No Incidents Reported Yet</h2>
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem; max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.6;">
+                            Your filed complaints will appear here with live tracking, evidence verification, and officer investigation progress.
+                        </p>
+                        <a href="/report" class="btn-report-new">📝 Report New Incident</a>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '<div class="complaints-grid">';
+            list.forEach(c => {
+                const sevBadge = getSeverityBadge(c.detectedSeverity || c.threatLevel);
+                const statusBadge = getStatusBadge(c.status);
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recent';
+                const descSnippet = c.description || 'No description provided.';
+                
+                // Stepper state calculation (5 steps: Submitted -> Reviewed -> Accepted -> Investigation -> Resolved)
+                const stepIdx = getStepIndex(c.status);
+                const steps = [
+                    { name: 'Submitted', key: 1 },
+                    { name: 'Reviewed', key: 2 },
+                    { name: 'Accepted', key: 3 },
+                    { name: 'Investigation', key: 4 },
+                    { name: 'Resolved', key: 5 }
+                ];
+                let stepperHtml = '<div class="case-stepper">';
+                steps.forEach((step, idx) => {
+                    let nodeClass = 'upcoming';
+                    let icon = '○';
+                    if (step.key < stepIdx) {
+                        nodeClass = 'completed';
+                        icon = '✓';
+                    } else if (step.key === stepIdx) {
+                        nodeClass = 'active';
+                        icon = '●';
+                    }
+                    stepperHtml += `
+                        <div class="stepper-node ${nodeClass}">
+                            <div class="stepper-dot">${icon}</div>
+                            <span>${step.name}</span>
+                        </div>
+                    `;
+                    if (idx < steps.length - 1) {
+                        const lineClass = (step.key < stepIdx) ? 'completed' : '';
+                        stepperHtml += `<div class="stepper-line ${lineClass}"></div>`;
+                    }
+                });
+                stepperHtml += '</div>';
+
+                // Evidence status display
+                let evidenceBadge = `<span style="font-size: 0.8rem; color: #94a3b8;">📸 No Evidence</span>`;
+                if (c.evidenceList && c.evidenceList.length > 0) {
+                    const ev = c.evidenceList[0];
+                    if (ev.status === 'VERIFIED') {
+                        evidenceBadge = `<span style="font-size: 0.8rem; color: #34d399; font-weight: 600;">📸 Evidence Verified</span>`;
+                    } else {
+                        evidenceBadge = `<span style="font-size: 0.8rem; color: #60a5fa; font-weight: 600;">📸 Evidence Pending Review</span>`;
+                    }
+                } else if (c.evidencePath || c.hasEvidence) {
+                    evidenceBadge = `<span style="font-size: 0.8rem; color: #60a5fa; font-weight: 600;">📸 Evidence Attached</span>`;
+                }
+
+                html += `
+                    <div class="case-card">
+                        <div>
+                            <div class="case-card-header">
+                                <span class="case-id-badge">${c.complaintNumber || ('CS-' + c.id)}</span>
+                                ${statusBadge}
+                            </div>
+                            <div class="case-title">${escapeHtml(c.title || 'Incident Report')}</div>
+                            <div class="case-meta-row">
+                                <span>🌐 ${escapeHtml(c.platform || 'Online Platform')}</span> &bull; 
+                                <span>📅 Submitted: ${dateStr}</span>
+                            </div>
+                            <div class="case-badges-row">
+                                ${sevBadge}
+                                ${evidenceBadge}
+                            </div>
+                            <p class="case-desc">${escapeHtml(descSnippet)}</p>
+
+                            <!-- Dynamic 5-Step Stepper -->
+                            ${stepperHtml}
+                        </div>
+
+                        <div class="case-footer">
+                            <span class="case-updated">Last Updated: ${c.updatedAt ? new Date(c.updatedAt).toLocaleDateString() : dateStr}</span>
+                            <button onclick="openTimelineModal(${c.id})" class="btn-view-timeline">
+                                ⏱️ View Progress &rarr;
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function filterUserComplaints() {
+            const query = (document.getElementById('trackSearchInput').value || '').toLowerCase();
+            const statusF = document.getElementById('trackStatusFilter').value;
+            const sevF = document.getElementById('trackSeverityFilter').value;
+
+            const filtered = allUserComplaints.filter(c => {
+                const matchQ = !query || 
+                    (c.complaintNumber && c.complaintNumber.toLowerCase().includes(query)) ||
+                    (c.title && c.title.toLowerCase().includes(query)) ||
+                    (c.platform && c.platform.toLowerCase().includes(query)) ||
+                    (c.description && c.description.toLowerCase().includes(query));
+
+                let matchStatus = (statusF === 'ALL') || (c.status === statusF);
+                if (statusF === 'PENDING' && (c.status === 'PENDING' || c.status === 'SUBMITTED')) matchStatus = true;
+                if (statusF === 'REVIEWED' && (c.status === 'REVIEWED' || c.status === 'UNDER_REVIEW')) matchStatus = true;
+
+                const cSev = (c.detectedSeverity || c.threatLevel || 'LOW').toUpperCase();
+                const matchSev = (sevF === 'ALL') || (cSev === sevF);
+
+                return matchQ && matchStatus && matchSev;
+            });
+
+            renderUserComplaints(filtered);
+        }
+
+        function openTimelineModal(id) {
+            const c = allUserComplaints.find(item => item.id === id);
+            if (!c) return;
+
+            document.getElementById('modalCaseNumber').innerText = c.complaintNumber || ('#CS-' + c.id);
+            document.getElementById('modalCaseTitle').innerText = c.title || 'Incident Report';
+            document.getElementById('modalPlatform').innerText = c.platform || 'Online';
+            document.getElementById('modalDate').innerText = c.createdAt ? new Date(c.createdAt).toLocaleString() : 'N/A';
+            document.getElementById('modalDesc').innerText = c.description || 'No description provided.';
+
+            document.getElementById('modalStatusBadge').innerHTML = getStatusBadge(c.status);
+            document.getElementById('modalSeverityBadge').innerHTML = getSeverityBadge(c.detectedSeverity || c.threatLevel);
+
+            // Visual vertical timeline
+            const stepIdx = getStepIndex(c.status);
+            const timelineSteps = [
+                { title: 'Complaint Submitted', key: 1, desc: 'Complaint registered with CyberShield and assigned PENDING status.' },
+                { title: 'Under Review', key: 2, desc: 'Cyber safety officer reviews incident details and digital proof.' },
+                { title: 'Accepted', key: 3, desc: 'Complaint accepted for official platform escalation and investigation.' },
+                { title: 'Further Investigation', key: 4, desc: 'Evidence verified and formal takedown / platform notice dispatched.' },
+                { title: 'Resolved', key: 5, desc: 'Incident resolved successfully and case completed.' }
+            ];
+
+            let vTimelineHtml = '';
+            timelineSteps.forEach((st, idx) => {
+                let symbol = '○';
+                let color = '#64748b';
+                let badge = '<span style="font-size: 0.72rem; color: #64748b; background: rgba(255,255,255,0.05); padding: 0.15rem 0.5rem; border-radius: 4px;">Upcoming</span>';
+                if (st.key < stepIdx) {
+                    symbol = '✓';
+                    color = '#34d399';
+                    badge = '<span style="font-size: 0.72rem; color: #34d399; background: rgba(16, 185, 129, 0.15); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Completed</span>';
+                } else if (st.key === stepIdx) {
+                    symbol = '●';
+                    color = '#38bdf8';
+                    badge = '<span style="font-size: 0.72rem; color: #38bdf8; background: rgba(56, 189, 248, 0.15); padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 700;">Current Stage</span>';
+                }
+
+                vTimelineHtml += `
+                    <div style="display: flex; gap: 0.85rem; position: relative;">
+                        <div style="display: flex; flex-direction: column; align-items: center; width: 24px;">
+                            <div style="width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; color: ${color}; border: 2px solid ${color}; background: #0f172a;">
+                                ${symbol}
+                            </div>
+                            ${idx < timelineSteps.length - 1 ? `<div style="width: 2px; flex: 1; min-height: 24px; background: ${st.key < stepIdx ? '#34d399' : '#334155'}; margin: 0.2rem 0;"></div>` : ''}
+                        </div>
+                        <div style="flex: 1; padding-bottom: ${idx < timelineSteps.length - 1 ? '1.25rem' : '0.25rem'};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+                                <strong style="color: #fff; font-size: 0.95rem;">${st.title}</strong>
+                                ${badge}
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 0.82rem; margin: 0;">${st.desc}</p>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('modalVisualTimeline').innerHTML = vTimelineHtml;
+
+            // Evidence
+            const evBox = document.getElementById('modalEvidenceBox');
+            if (c.evidenceList && c.evidenceList.length > 0) {
+                const ev = c.evidenceList[0];
+                document.getElementById('modalEvidenceContent').innerText = `📸 Attached file: "${ev.fileName}" [Status: ${ev.status}]`;
+                evBox.style.display = 'block';
+            } else {
+                evBox.style.display = 'none';
+            }
+
+            // Officer Remarks
+            const remarksBox = document.getElementById('modalRemarksBox');
+            if (c.adminRemarks) {
+                document.getElementById('modalOfficerRemarks').innerText = c.adminRemarks;
+                remarksBox.style.display = 'block';
+            } else {
+                remarksBox.style.display = 'none';
+            }
+
+            document.getElementById('timelineModal').style.display = 'flex';
+        }
+
+        function closeTimelineModal() {
+            document.getElementById('timelineModal').style.display = 'none';
+        }
+
+        function getStatusBadge(status) {
+            const s = (status || 'PENDING').toUpperCase();
+            if (s === 'PENDING' || s === 'SUBMITTED') {
+                return '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">PENDING</span>';
+            }
+            if (s === 'REVIEWED' || s === 'UNDER_REVIEW') {
+                return '<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight: 700;">REVIEWED</span>';
+            }
+            if (s === 'ACCEPTED') {
+                return '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700;">ACCEPTED</span>';
+            }
+            if (s === 'INVESTIGATION' || s === 'INVESTIGATING' || s === 'EVIDENCE_VERIFIED') {
+                return '<span class="badge" style="background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.4); font-weight: 700;">INVESTIGATION</span>';
+            }
+            if (s === 'ACTION_TAKEN') {
+                return '<span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-weight: 700;">ACTION TAKEN</span>';
+            }
+            if (s === 'RESOLVED') {
+                return '<span class="badge" style="background: rgba(16, 185, 129, 0.25); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5); font-weight: 700;">RESOLVED</span>';
+            }
+            if (s === 'REJECTED') {
+                return '<span class="badge badge-critical" style="font-weight: 700;">REJECTED</span>';
+            }
+            return `<span class="badge">${s}</span>`;
+        }
+
+        function getSeverityBadge(sev) {
+            const s = (sev || 'LOW').toUpperCase();
+            if (s === 'CRITICAL') return '<span class="badge badge-critical">CRITICAL</span>';
+            if (s === 'HIGH') return '<span class="badge badge-high">HIGH</span>';
+            if (s === 'MEDIUM') return '<span class="badge badge-medium">MEDIUM</span>';
+            return '<span class="badge badge-low">LOW</span>';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/users/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('cyberShield_user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications – CyberShield</title>
+    <!-- External stylesheet with proper fallback -->
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Embedded Fail-Safe CSS -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.88);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(56, 189, 248, 0.6);
+            --primary: #0284c7;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.14) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation: STRICTLY USER NAVIGATION */
+        .navbar {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #38bdf8;
+        }
+
+        .user-portal-badge {
+            font-size: 0.88rem;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            color: #38bdf8;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-nav-logout {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 0.45rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-nav-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        .notif-container {
+            max-width: 760px;
+            width: 100%;
+            margin: 2.5rem auto 4rem;
+            padding: 0 1.25rem;
+            flex: 1;
+        }
+
+        .notif-page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .notif-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .btn-refresh {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 0.45rem 1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-refresh:hover {
+            background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+
+        /* Notification Card */
+        .notification-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.92) 0%, rgba(13, 22, 45, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 1.5rem 1.75rem;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+            transition: transform 0.25s ease, border-color 0.25s ease;
+            position: relative;
+        }
+
+        .notification-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(56, 189, 248, 0.5);
+            box-shadow: 0 14px 35px rgba(0, 0, 0, 0.5), 0 0 15px rgba(14, 165, 233, 0.15);
+        }
+
+        .notif-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .notif-type-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .notif-dot {
+            font-size: 1.1rem;
+        }
+
+        .notif-title-text {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .notif-type-tag {
+            font-size: 0.74rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            background: rgba(56, 189, 248, 0.12);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .notif-message {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            margin-bottom: 0.85rem;
+            padding-left: 1.7rem;
+        }
+
+        .notif-date {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            padding-left: 1.7rem;
+        }
+
+        /* Empty State */
+        .empty-notif-box {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.85) 0%, rgba(13, 22, 45, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .empty-notif-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-notif-title {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-notif-sub {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            max-width: 440px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- USER-ONLY TOP NAVIGATION (NO ADMIN REFERENCES) -->
+    <nav class="navbar">
+        <a th:href="@{/user/dashboard}" href="/user/dashboard" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/user/dashboard}" href="/user/dashboard" class="nav-link">Dashboard</a>
+            <a th:href="@{/user/track}" href="/user/track" class="nav-link">Track Complaints</a>
+            <a th:href="@{/user/profile}" href="/user/profile" class="nav-link">Profile</a>
+            <a th:href="@{/user/notifications}" href="/user/notifications" class="nav-link active">Notifications</a>
+            <span class="user-portal-badge" id="userBadgeDisplay">
+                👤 User Portal
+            </span>
+            <button onclick="handleLogout()" class="btn-nav-logout">
+                🚪 Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="notif-container">
+        <div class="notif-page-header">
+            <h1 class="notif-title">🔔 Notifications</h1>
+            <button onclick="refreshNotifications()" class="btn-refresh">
+                🔄 Refresh Alerts
+            </button>
+        </div>
+
+        <div id="notificationsList">
+            <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                🔄 Loading notifications...
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Confidential User Portal
+    </footer>
+
+    <script>
+        let currentUserId = null;
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await identifyCurrentUser();
+            await refreshNotifications();
+        });
+
+        async function identifyCurrentUser() {
+            try {
+                const res = await fetch('/api/users/current');
+                if (res.ok) {
+                    const user = await res.json();
+                    if (user && user.id) {
+                        currentUserId = user.id;
+                        document.getElementById('userBadgeDisplay').innerText = `👤 ${user.name}`;
+                        return;
+                    }
+                }
+            } catch (e) {}
+
+            const raw = localStorage.getItem('cyberShield_user');
+            if (raw) {
+                try {
+                    const u = JSON.parse(raw);
+                    if (u.id) currentUserId = u.id;
+                    if (u.name) document.getElementById('userBadgeDisplay').innerText = `👤 ${u.name}`;
+                } catch (e) {}
+            }
+        }
+
+        async function refreshNotifications() {
+            const container = document.getElementById('notificationsList');
+            try {
+                let url = '/api/notifications';
+                if (currentUserId) {
+                    url = `/api/notifications?userId=${currentUserId}`;
+                }
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Failed to load notifications');
+                const list = await res.json();
+                renderNotifications(list);
+            } catch (err) {
+                renderEmptyState();
+            }
+        }
+
+        function renderNotifications(list) {
+            const container = document.getElementById('notificationsList');
+            if (!list || list.length === 0) {
+                renderEmptyState();
+                return;
+            }
+
+            let html = '';
+            list.forEach(n => {
+                const title = n.title || 'Complaint Status Updated';
+                let message = n.message || 'Your incident report is being processed.';
+                const timeStr = formatNotificationTime(n.createdAt);
+                
+                // Determine status badge and color
+                let statusLabel = (n.type || 'NOTIFICATION').toUpperCase();
+                let statusColor = '#38bdf8';
+                let badgeStyle = 'background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.35);';
+
+                if (statusLabel === 'REVIEWED' || title.includes('Reviewed') || message.includes('REVIEWED')) {
+                    statusLabel = 'REVIEWED';
+                    statusColor = '#38bdf8';
+                    badgeStyle = 'background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);';
+                } else if (statusLabel === 'ACCEPTED' || title.includes('Accepted') || message.includes('ACCEPTED')) {
+                    statusLabel = 'ACCEPTED';
+                    statusColor = '#34d399';
+                    badgeStyle = 'background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4);';
+                } else if (statusLabel.includes('RESOLVED')) {
+                    statusLabel = 'RESOLVED';
+                    statusColor = '#10b981';
+                    badgeStyle = 'background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);';
+                }
+
+                // If message contains "Status: ...", remove it from message body to display cleanly on status bar
+                let cleanMsg = message.replace(/Status:\s*[A-Z_]+/i, '').trim();
+
+                html += `
+                    <div class="notification-card" style="border-left: 4px solid ${statusColor};">
+                        <div class="notif-card-header">
+                            <div class="notif-type-wrap">
+                                <span class="notif-title-text">${escapeHtml(title)}</span>
+                            </div>
+                            <span class="notif-type-tag" style="${badgeStyle}">${escapeHtml(statusLabel)}</span>
+                        </div>
+                        <div class="notif-message" style="padding-left: 0; margin-bottom: 0.75rem;">
+                            ${escapeHtml(cleanMsg)}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.6rem; font-size: 0.85rem;">
+                            <span style="font-weight: 700; color: ${statusColor};">Status: ${escapeHtml(statusLabel)}</span>
+                            <span style="color: var(--text-muted); font-size: 0.82rem;">🕒 ${timeStr}</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function renderEmptyState() {
+            const container = document.getElementById('notificationsList');
+            container.innerHTML = `
+                <div class="empty-notif-box">
+                    <div class="empty-notif-icon">🔔</div>
+                    <div class="empty-notif-title">You're all caught up</div>
+                    <div class="empty-notif-sub">Notifications about your complaint status and evidence updates will appear here.</div>
+                </div>
+            `;
+        }
+
+        function formatNotificationTime(isoStr) {
+            try {
+                if (!isoStr) return '10:45 PM';
+                const d = new Date(isoStr);
+                let hours = d.getHours();
+                const mins = String(d.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12 || 12;
+                return `${hours}:${mins} ${ampm}`;
+            } catch (e) {
+                return '10:45 PM';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/users/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('cyberShield_user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

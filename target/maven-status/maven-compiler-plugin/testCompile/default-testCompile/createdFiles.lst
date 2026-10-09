@@ -1,7 +1,0 @@
-com\cybershield\controller\UserControllerTest.class
-com\cybershield\controller\EvidenceControllerTest.class
-com\cybershield\controller\ComplaintControllerTest.class
-com\cybershield\controller\ViewControllerTest.class
-com\cybershield\EntityMappingTest.class
-com\cybershield\controller\HealthControllerTest.class
-com\cybershield\service\SeverityAnalysisServiceTest.class

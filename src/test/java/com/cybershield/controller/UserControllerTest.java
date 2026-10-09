@@ -60,4 +60,27 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.email").value("test@gmail.com"))
                 .andExpect(jsonPath("$.role").value("USER"));
     }
+
+    @Test
+    void testLoginUserSuccess() throws Exception {
+        com.cybershield.dto.LoginRequest loginReq = new com.cybershield.dto.LoginRequest("test@gmail.com", "password123");
+        UserResponse response = new UserResponse(
+                1L,
+                "Test User",
+                "test@gmail.com",
+                "9876543210",
+                "USER",
+                LocalDateTime.now()
+        );
+
+        when(userService.loginUser("test@gmail.com", "password123")).thenReturn(response);
+
+        mockMvc.perform(post("/api/users/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(loginReq)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Test User"))
+                .andExpect(jsonPath("$.email").value("test@gmail.com"));
+    }
 }

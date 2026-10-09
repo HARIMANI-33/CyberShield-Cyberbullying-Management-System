@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile – CyberShield</title>
+    <!-- External stylesheet with proper fallback -->
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Embedded Fail-Safe CSS -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.88);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(56, 189, 248, 0.6);
+            --primary: #0284c7;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.14) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation: STRICTLY USER NAVIGATION */
+        .navbar {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .nav-link {
+            color: #94a3b8;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: #38bdf8;
+        }
+
+        .user-portal-badge {
+            font-size: 0.88rem;
+            background: rgba(56, 189, 248, 0.15);
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            color: #38bdf8;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .btn-nav-logout {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            padding: 0.45rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+        }
+
+        .btn-nav-logout:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        .profile-container {
+            max-width: 820px;
+            width: 100%;
+            margin: 2.5rem auto 4rem;
+            padding: 0 1.25rem;
+            flex: 1;
+        }
+
+        .page-header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
+
+        .btn-back-dashboard {
+            color: #38bdf8;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.9rem;
+            transition: gap 0.2s ease;
+        }
+
+        .btn-back-dashboard:hover {
+            gap: 0.65rem;
+            color: #7dd3fc;
+        }
+
+        /* 1. Profile Header Card */
+        .profile-header-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.95) 0%, rgba(13, 22, 45, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+            padding: 2.5rem 2rem;
+            box-shadow: 0 16px 45px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .profile-avatar-wrap {
+            width: 92px;
+            height: 92px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0284c7, #4f46e5);
+            border: 3px solid rgba(56, 189, 248, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            margin: 0 auto 1.25rem;
+            box-shadow: 0 0 25px rgba(14, 165, 233, 0.35);
+        }
+
+        .profile-user-name {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.4rem;
+        }
+
+        .profile-role-badge {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.3rem 1rem;
+            border-radius: 9999px;
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+        }
+
+        /* Section Cards */
+        .info-card {
+            background: linear-gradient(180deg, rgba(20, 31, 61, 0.9) 0%, rgba(13, 22, 45, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-md);
+            padding: 1.75rem 2rem;
+            margin-bottom: 1.75rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+        }
+
+        .card-heading {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.25rem;
+        }
+
+        .info-item {
+            background: rgba(10, 15, 29, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 10px;
+            padding: 0.85rem 1.15rem;
+        }
+
+        .info-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        .info-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .status-active {
+            color: #34d399;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* 4 Statistics Cards */
+        .stats-cards-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .stats-cards-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .stat-card {
+            background: rgba(10, 15, 29, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: var(--radius-md);
+            padding: 1.4rem 1rem;
+            text-align: center;
+            transition: all 0.25s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+
+        .stat-number {
+            font-size: 2.1rem;
+            font-weight: 800;
+            margin-bottom: 0.35rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        /* Quick Action Buttons */
+        .profile-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-profile-act {
+            padding: 0.75rem 1.6rem;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.25s ease;
+        }
+
+        .btn-act-primary {
+            background: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+        }
+
+        .btn-act-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+            filter: brightness(1.1);
+        }
+
+        .btn-act-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+        }
+
+        .btn-act-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- USER-ONLY TOP NAVIGATION (NO ADMIN REFERENCES) -->
+    <nav class="navbar">
+        <a th:href="@{/user/dashboard}" href="/user/dashboard" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/user/dashboard}" href="/user/dashboard" class="nav-link">Dashboard</a>
+            <a th:href="@{/user/track}" href="/user/track" class="nav-link">Track Complaints</a>
+            <a th:href="@{/user/profile}" href="/user/profile" class="nav-link active">Profile</a>
+            <a th:href="@{/user/notifications}" href="/user/notifications" class="nav-link">Notifications</a>
+            <span class="user-portal-badge" id="userBadgeDisplay">
+                👤 User Portal
+            </span>
+            <button onclick="handleLogout()" class="btn-nav-logout">
+                🚪 Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="profile-container">
+        <div class="page-header-row">
+            <h1 class="page-title">My Profile</h1>
+            <a th:href="@{/user/dashboard}" href="/user/dashboard" class="btn-back-dashboard">
+                &larr; Back to Dashboard
+            </a>
+        </div>
+
+        <!-- 1. PROFILE HEADER CARD -->
+        <div class="profile-header-card">
+            <div class="profile-avatar-wrap">👤</div>
+            <div class="profile-user-name" id="profileName">Hari</div>
+            <div class="profile-role-badge">USER / STUDENT</div>
+        </div>
+
+        <!-- 2. ACCOUNT INFORMATION -->
+        <div class="info-card">
+            <div class="card-heading">
+                <span>📋</span> Account Information
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Full Name</span>
+                    <div class="info-value" id="profileFullName">Hari Kumar</div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email Address</span>
+                    <div class="info-value" id="profileEmail">hari@example.com</div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Phone Number</span>
+                    <div class="info-value" id="profilePhone">+91 98765 43210</div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Account Role</span>
+                    <div class="info-value" id="profileRole">USER</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. SECURITY & PRIVACY -->
+        <div class="info-card">
+            <div class="card-heading">
+                <span>🔒</span> Security &amp; Privacy
+            </div>
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Security Status</span>
+                    <div class="info-value status-active">● Active &amp; Verified Session</div>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Privacy Status</span>
+                    <div class="info-value" style="color: #38bdf8;">🛡️ Confidential Identity Protection</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CASE ACTIVITY (ATTRACTIVE STATISTIC CARDS) -->
+        <div class="info-card">
+            <div class="card-heading">
+                <span>📊</span> Case Activity Statistics
+            </div>
+            <div class="stats-cards-row">
+                <div class="stat-card">
+                    <div class="stat-number" id="statTotal" style="color: #38bdf8;">05</div>
+                    <div class="stat-label">Total Complaints</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statInvestigation" style="color: #f59e0b;">02</div>
+                    <div class="stat-label">Under Investigation</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statEvidenceVerified" style="color: #818cf8;">02</div>
+                    <div class="stat-label">Evidence Verified</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="statResolved" style="color: #10b981;">03</div>
+                    <div class="stat-label">Resolved Cases</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK ACTION BUTTONS -->
+        <div class="profile-actions">
+            <a th:href="@{/report}" href="/report" class="btn-profile-act btn-act-primary">
+                📝 Report Complaint
+            </a>
+            <a th:href="@{/user/track}" href="/user/track" class="btn-profile-act btn-act-secondary">
+                📋 Track Complaints
+            </a>
+            <a th:href="@{/user/notifications}" href="/user/notifications" class="btn-profile-act btn-act-secondary">
+                🔔 Notifications
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Confidential User Portal
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', async () => {
+            let user = null;
+            try {
+                const res = await fetch('/api/users/current');
+                if (res.ok) {
+                    user = await res.json();
+                }
+            } catch (e) {}
+
+            if (!user) {
+                const raw = localStorage.getItem('cyberShield_user');
+                if (raw) {
+                    try { user = JSON.parse(raw); } catch (e) {}
+                }
+            }
+
+            if (user) {
+                if (user.name) {
+                    document.getElementById('profileName').innerText = user.name;
+                    document.getElementById('profileFullName').innerText = user.name;
+                    document.getElementById('userBadgeDisplay').innerText = `👤 ${user.name}`;
+                }
+                if (user.email) document.getElementById('profileEmail').innerText = user.email;
+                if (user.phone) document.getElementById('profilePhone').innerText = user.phone;
+                if (user.role) document.getElementById('profileRole').innerText = user.role;
+                loadUserStats(user.id);
+            } else {
+                loadUserStats(null);
+            }
+        });
+
+        async function loadUserStats(userId) {
+            try {
+                let url = '/api/complaints';
+                if (userId) url = `/api/complaints/user/${userId}`;
+                const res = await fetch(url);
+                if (res.ok) {
+                    const list = await res.json();
+                    const total = list.length;
+                    let investigationCount = 0;
+                    let evidenceVerifiedCount = 0;
+                    let resolvedCount = 0;
+
+                    list.forEach(c => {
+                        const s = (c.status || '').toUpperCase();
+                        if (s === 'UNDER_REVIEW' || s === 'INVESTIGATION') investigationCount++;
+                        if (s === 'EVIDENCE_VERIFIED' || s === 'ACTION_TAKEN') evidenceVerifiedCount++;
+                        if (s === 'RESOLVED') resolvedCount++;
+                    });
+
+                    const pad = (n) => n < 10 ? `0${n}` : `${n}`;
+                    document.getElementById('statTotal').innerText = pad(total);
+                    document.getElementById('statInvestigation').innerText = pad(investigationCount);
+                    document.getElementById('statEvidenceVerified').innerText = pad(evidenceVerifiedCount);
+                    document.getElementById('statResolved').innerText = pad(resolvedCount);
+                }
+            } catch (e) {}
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/users/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('cyberShield_user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

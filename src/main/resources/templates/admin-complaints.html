@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complaints Management – CyberShield Admin</title>
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Admin Navigation: Dedicated Command Center Bar -->
+    <nav class="navbar">
+        <a th:href="@{/admin/dashboard}" href="/admin/dashboard" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+            <span class="admin-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; padding: 0.2rem 0.6rem; border-radius: 6px; margin-left: 0.35rem;">ADMIN</span>
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/admin/dashboard}" href="/admin/dashboard" class="nav-link">Dashboard</a>
+            <a th:href="@{/admin/complaints}" href="/admin/complaints" class="nav-link active" style="color: #38bdf8;">Complaints</a>
+            <a th:href="@{/admin/evidence}" href="/admin/evidence" class="nav-link">Evidence Review</a>
+            <a th:href="@{/admin/platform-action}" href="/admin/platform-action" class="nav-link">Platform Action</a>
+            <a th:href="@{/admin/reports}" href="/admin/reports" class="nav-link">Reports &amp; Stats</a>
+            <button onclick="handleAdminLogout()" class="btn-nav-logout" style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: #cbd5e1; padding: 0.45rem 1.1rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer;">
+                🚪 Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="container-wide">
+        <!-- Top Action Bar -->
+        <div class="back-dashboard-bar">
+            <div>
+                <a th:href="@{/admin/dashboard}" style="color: #38bdf8; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    &larr; Return to Admin Dashboard
+                </a>
+                <h1 style="font-size: 2rem; font-weight: 800; color: #fff;">Complaints Management 📋</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Examine reported cyberbullying incidents, filter by risk severity, triage priorities, and update case lifecycle states.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <button onclick="loadComplaints()" class="btn btn-secondary btn-sm" style="padding: 0.5rem 1rem;">
+                    🔄 Refresh Live Feed
+                </button>
+                <a th:href="@{/admin/platform-action}" class="btn btn-primary btn-sm" style="padding: 0.5rem 1rem;">
+                    🌐 Platform Actions &rarr;
+                </a>
+            </div>
+        </div>
+
+        <div id="alertBox" style="display: none; margin-bottom: 1.5rem;"></div>
+
+        <!-- Summary Metrics -->
+        <div class="metric-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
+            <div class="metric-card">
+                <span class="metric-label">Total Cases</span>
+                <span class="metric-num" id="statTotalComplaints">0</span>
+                <span class="metric-sub">Registered</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Pending Review</span>
+                <span class="metric-num" id="statPendingComplaints" style="color: #fbbf24;">0</span>
+                <span class="metric-sub">PENDING state</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Reviewed</span>
+                <span class="metric-num" id="statInReview" style="color: #38bdf8;">0</span>
+                <span class="metric-sub">Admin reviewed</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Accepted</span>
+                <span class="metric-num" id="statAccepted" style="color: #34d399;">0</span>
+                <span class="metric-sub">For investigation</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">High / Critical</span>
+                <span class="metric-num" id="statImmediate" style="color: #ef4444;">0</span>
+                <span class="metric-sub">Urgent threat level</span>
+            </div>
+            <div class="metric-card">
+                <span class="metric-label">Resolved</span>
+                <span class="metric-num" id="statResolved" style="color: #10b981;">0</span>
+                <span class="metric-sub">Closed successfully</span>
+            </div>
+        </div>
+
+        <!-- Filters Bar -->
+        <div style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 1rem 1.4rem; margin-bottom: 1.75rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 220px;">
+                <input type="text" id="complaintSearchInput" oninput="filterComplaints()" class="form-control" placeholder="🔍 Search Case #, Title, Complainant, or Platform..." style="padding: 0.55rem 1rem;">
+            </div>
+            <div style="min-width: 180px;">
+                <select id="statusFilterSelect" onchange="filterComplaints()" class="form-select" style="padding: 0.55rem 1rem;">
+                    <option value="ALL">All Statuses</option>
+                    <option value="PENDING">PENDING</option>
+                    <option value="REVIEWED">REVIEWED</option>
+                    <option value="ACCEPTED">ACCEPTED</option>
+                    <option value="SUBMITTED">SUBMITTED</option>
+                    <option value="UNDER_REVIEW">UNDER_REVIEW</option>
+                    <option value="EVIDENCE_VERIFIED">EVIDENCE_VERIFIED</option>
+                    <option value="ACTION_TAKEN">ACTION_TAKEN</option>
+                    <option value="RESOLVED">RESOLVED</option>
+                    <option value="REJECTED">REJECTED</option>
+                </select>
+            </div>
+            <div style="min-width: 160px;">
+                <select id="severityFilterSelect" onchange="filterComplaints()" class="form-select" style="padding: 0.55rem 1rem;">
+                    <option value="ALL">All Threat Levels</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="LOW">LOW</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Complaints Cards Feed -->
+        <div id="complaintsGrid" class="cards-grid">
+            <div style="color: var(--text-muted); padding: 2rem;">Loading complaints feed...</div>
+        </div>
+
+        <!-- Update Status Modal -->
+        <div id="statusModal" class="modal-overlay">
+            <div class="modal-content">
+                <h3 style="color: #fff; margin-bottom: 0.5rem;">Update Complaint Lifecycle Status</h3>
+                <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 1.25rem;">
+                    Complaint Case: <span id="modalStatusCaseNum" style="font-family: monospace; color: #38bdf8; font-weight: 700;"></span>
+                </p>
+                <input type="hidden" id="modalStatusComplaintId">
+
+                <div class="form-group">
+                    <label class="form-label">New Investigation Status</label>
+                    <select id="modalNewStatusSelect" class="form-select">
+                        <option value="PENDING">PENDING – Awaiting review</option>
+                        <option value="REVIEWED">REVIEWED – Admin review completed</option>
+                        <option value="ACCEPTED">ACCEPTED – Accepted for action</option>
+                        <option value="UNDER_REVIEW">UNDER_REVIEW – Assign to investigation queue</option>
+                        <option value="INVESTIGATION">INVESTIGATION – Active investigation</option>
+                        <option value="EVIDENCE_VERIFIED">EVIDENCE_VERIFIED – Digital evidence validated</option>
+                        <option value="ACTION_TAKEN">ACTION_TAKEN – Platform escalated / warning issued</option>
+                        <option value="RESOLVED">RESOLVED – Case closed satisfactorily</option>
+                        <option value="REJECTED">REJECTED – Insufficient merit or spam</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Officer Investigation Notes / Remarks</label>
+                    <textarea id="modalStatusRemarks" class="form-control" rows="3" placeholder="Enter findings, justification, or escalation notes..."></textarea>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button onclick="closeStatusModal()" class="btn btn-secondary btn-sm" style="padding: 0.5rem 1rem;">Cancel</button>
+                    <button onclick="submitStatusUpdate()" class="btn btn-primary btn-sm" style="padding: 0.5rem 1.25rem;">Save Status Update</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Details Modal -->
+        <div id="adminDetailsModal" class="modal-overlay">
+            <div class="modal-content modal-content-lg">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div>
+                        <span id="dtlCaseNum" style="font-family: monospace; font-size: 1.2rem; font-weight: 700; color: #38bdf8;"></span>
+                        <h3 id="dtlTitle" style="color: #fff; margin-top: 0.25rem;">Complaint Information</h3>
+                    </div>
+                    <button onclick="closeAdminDetailsModal()" class="btn btn-secondary btn-sm" style="font-size: 1.1rem; padding: 0.2rem 0.6rem;">&times;</button>
+                </div>
+
+                <!-- Complaint Details Content -->
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem;">
+                    
+                    <!-- Prominent Status Control Bar -->
+                    <div style="background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <span class="profile-field-label" style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Current Status</span>
+                            <div id="dtlStatusBadge" style="margin-top: 0.35rem;"></div>
+                        </div>
+                        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                            <span id="dtlQuickActionBtnWrap"></span>
+                            <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                <select id="dtlStatusSelect" class="form-select" style="padding: 0.4rem 0.75rem; font-size: 0.85rem; min-width: 140px;">
+                                    <option value="PENDING">PENDING</option>
+                                    <option value="REVIEWED">REVIEWED</option>
+                                    <option value="ACCEPTED">ACCEPTED</option>
+                                    <option value="INVESTIGATION">INVESTIGATION</option>
+                                    <option value="RESOLVED">RESOLVED</option>
+                                    <option value="REJECTED">REJECTED</option>
+                                </select>
+                                <button onclick="updateStatusFromDetailsModal()" class="btn btn-primary btn-sm" style="padding: 0.4rem 0.9rem; font-size: 0.85rem;">Update</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.25rem;">
+                        <div>
+                            <span class="profile-field-label">Complainant</span>
+                            <div id="dtlComplainant" style="color: #fff; font-weight: 600;"></div>
+                            <div id="dtlEmail" style="color: var(--text-muted); font-size: 0.82rem;"></div>
+                        </div>
+                        <div>
+                            <span class="profile-field-label">Platform</span>
+                            <div id="dtlPlatform" style="color: #fff; font-weight: 600;"></div>
+                        </div>
+                        <div>
+                            <span class="profile-field-label">Detected Threat</span>
+                            <div id="dtlSeverity"></div>
+                        </div>
+                        <div>
+                            <span class="profile-field-label">Priority Level</span>
+                            <div id="dtlPriority" style="font-weight: 700;"></div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 1.25rem;">
+                        <span class="profile-field-label">Complaint Narrative</span>
+                        <p id="dtlDescription" style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 6px;"></p>
+                    </div>
+
+                    <div id="dtlEvidenceSection" style="margin-bottom: 1rem;">
+                        <span class="profile-field-label">Digital Evidence Attached</span>
+                        <div id="dtlEvidenceList" style="margin-top: 0.5rem;"></div>
+                    </div>
+
+                    <div id="dtlRemarksWrap" style="display: none;">
+                        <span class="profile-field-label" style="color: #38bdf8;">Officer Remarks</span>
+                        <p id="dtlRemarks" style="color: #e2e8f0; font-size: 0.92rem; line-height: 1.5; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.3); padding: 0.75rem; border-radius: 6px;"></p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+                    <div id="dtlActionLinks"></div>
+                    <button onclick="closeAdminDetailsModal()" class="btn btn-secondary btn-sm" style="padding: 0.5rem 1.2rem;">Close</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Complaints Module
+    </footer>
+
+    <script>
+        let allComplaints = [];
+        let currentDetailComplaintId = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadComplaints();
+        });
+
+        async function loadComplaints() {
+            try {
+                const res = await fetch('/api/complaints');
+                if (!res.ok) throw new Error('Failed to load complaints');
+                allComplaints = await res.json();
+                updateMetrics(allComplaints);
+                filterComplaints();
+            } catch (err) {
+                console.error(err);
+                showAlert('Error loading complaints feed: ' + err.message, 'error');
+            }
+        }
+
+        function updateMetrics(list) {
+            let total = list.length;
+            let pending = 0;
+            let inReview = 0;
+            let accepted = 0;
+            let immediate = 0;
+            let resolved = 0;
+
+            list.forEach(c => {
+                const s = (c.status || '').toUpperCase();
+                const sev = (c.detectedSeverity || c.threatLevel || '').toUpperCase();
+                const p = (c.priority || '').toUpperCase();
+
+                if (s === 'PENDING' || s === 'SUBMITTED') pending++;
+                if (s === 'REVIEWED' || s === 'UNDER_REVIEW') inReview++;
+                if (s === 'ACCEPTED') accepted++;
+                if (sev === 'CRITICAL' || sev === 'HIGH' || p === 'IMMEDIATE_ATTENTION') immediate++;
+                if (s === 'RESOLVED') resolved++;
+            });
+
+            document.getElementById('statTotalComplaints').innerText = total;
+            document.getElementById('statPendingComplaints').innerText = pending;
+            document.getElementById('statInReview').innerText = inReview;
+            document.getElementById('statAccepted').innerText = accepted;
+            document.getElementById('statImmediate').innerText = immediate;
+            document.getElementById('statResolved').innerText = resolved;
+        }
+
+        function filterComplaints() {
+            const query = (document.getElementById('complaintSearchInput').value || '').toLowerCase();
+            const status = document.getElementById('statusFilterSelect').value;
+            const severity = document.getElementById('severityFilterSelect').value;
+
+            const filtered = allComplaints.filter(c => {
+                const matchQ = !query ||
+                    (c.complaintNumber && c.complaintNumber.toLowerCase().includes(query)) ||
+                    (c.title && c.title.toLowerCase().includes(query)) ||
+                    (c.userName && c.userName.toLowerCase().includes(query)) ||
+                    (c.platform && c.platform.toLowerCase().includes(query)) ||
+                    (c.description && c.description.toLowerCase().includes(query));
+
+                let matchStatus = (status === 'ALL') || (c.status === status);
+                if (status === 'PENDING' && (c.status === 'PENDING' || c.status === 'SUBMITTED')) matchStatus = true;
+                if (status === 'REVIEWED' && (c.status === 'REVIEWED' || c.status === 'UNDER_REVIEW')) matchStatus = true;
+
+                const sev = (c.detectedSeverity || c.threatLevel || '').toUpperCase();
+                const matchSev = (severity === 'ALL') || (sev === severity);
+
+                return matchQ && matchStatus && matchSev;
+            });
+
+            renderComplaints(filtered);
+        }
+
+        function renderComplaints(list) {
+            const grid = document.getElementById('complaintsGrid');
+            if (!list || list.length === 0) {
+                grid.innerHTML = '<div style="color: var(--text-muted); padding: 2rem;">No matching complaints found.</div>';
+                return;
+            }
+
+            let html = '';
+            list.forEach(c => {
+                const sevBadge = getSeverityBadge(c.detectedSeverity || c.threatLevel);
+                const statusBadge = getStatusBadge(c.status);
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleDateString() : 'Recent';
+                const descSnippet = c.description ? (c.description.length > 90 ? c.description.substring(0, 90) + '...' : c.description) : 'No description';
+                const st = (c.status || 'PENDING').toUpperCase();
+
+                // Build context-aware action button
+                let quickActionBtn = '';
+                if (st === 'PENDING' || st === 'SUBMITTED') {
+                    quickActionBtn = `
+                        <button onclick="quickUpdateStatus(${c.id}, 'REVIEWED')" class="btn btn-secondary btn-sm" style="background: rgba(56, 189, 248, 0.15); border-color: rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 700; font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+                            👁️ Mark as Reviewed
+                        </button>
+                    `;
+                } else if (st === 'REVIEWED' || st === 'UNDER_REVIEW') {
+                    quickActionBtn = `
+                        <button onclick="quickUpdateStatus(${c.id}, 'ACCEPTED')" class="btn btn-secondary btn-sm" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399; font-weight: 700; font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+                            ✅ Accept Complaint
+                        </button>
+                    `;
+                }
+
+                html += `
+                    <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                        <div>
+                            <div class="complaint-card-header">
+                                <span class="complaint-number">${c.complaintNumber || ('CS-' + c.id)}</span>
+                                ${statusBadge}
+                            </div>
+                            <div style="font-size: 1.15rem; font-weight: 700; color: #fff; margin-bottom: 0.4rem;">
+                                ${escapeHtml(c.title || 'Untitled Incident')}
+                            </div>
+                            <div class="complaint-meta">
+                                <span>👤 Reporter: ${escapeHtml(c.userName || 'Anonymous')}</span> &bull; 
+                                <span>🌐 Platform: ${escapeHtml(c.platform || 'Online')}</span> &bull; 
+                                <span>📅 Date: ${dateStr}</span>
+                            </div>
+                            <div style="margin-bottom: 0.85rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                <span>Severity:</span>
+                                ${sevBadge}
+                                ${c.priority === 'IMMEDIATE_ATTENTION' ? '<span class="badge badge-critical" style="font-size: 0.72rem;">🚨 IMMEDIATE</span>' : ''}
+                            </div>
+                            <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.45; margin-bottom: 1.25rem;">
+                                ${escapeHtml(descSnippet)}
+                            </p>
+                        </div>
+                        <div style="border-top: 1px solid rgba(255,255,255,0.06); padding-top: 1rem; display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+                            <div style="display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap;">
+                                <button onclick="openAdminDetailsModal(${c.id})" class="btn btn-secondary btn-sm" style="font-size: 0.82rem; padding: 0.35rem 0.75rem; font-weight: 600;">
+                                    🔍 View Details
+                                </button>
+                                ${quickActionBtn}
+                                <button onclick="openStatusModal(${c.id}, '${c.complaintNumber || ('CS-' + c.id)}', '${c.status || 'PENDING'}')" class="btn btn-secondary btn-sm" style="font-size: 0.82rem; padding: 0.35rem 0.65rem;">
+                                    ⚙️ Status
+                                </button>
+                            </div>
+                            <a href="/admin/platform-action?complaintId=${c.id}" class="btn btn-primary btn-sm" style="font-size: 0.82rem; padding: 0.35rem 0.75rem;">
+                                🌐 Action &rarr;
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        async function quickUpdateStatus(id, newStatus) {
+            try {
+                const res = await fetch(`/api/complaints/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, remarks: `Status updated to ${newStatus} by administrator.` })
+                });
+                if (!res.ok) throw new Error('Status update failed');
+                showAlert(`Case #${id} successfully updated to ${newStatus}`, 'success');
+                await loadComplaints();
+                if (currentDetailComplaintId === id) {
+                    await openAdminDetailsModal(id);
+                }
+            } catch (err) {
+                alert('Failed to update status: ' + err.message);
+            }
+        }
+
+        function openStatusModal(id, caseNum, currentStatus) {
+            document.getElementById('modalStatusComplaintId').value = id;
+            document.getElementById('modalStatusCaseNum').innerText = caseNum;
+            document.getElementById('modalNewStatusSelect').value = currentStatus || 'PENDING';
+            document.getElementById('modalStatusRemarks').value = '';
+            document.getElementById('statusModal').style.display = 'flex';
+        }
+
+        function closeStatusModal() {
+            document.getElementById('statusModal').style.display = 'none';
+        }
+
+        async function submitStatusUpdate() {
+            const id = document.getElementById('modalStatusComplaintId').value;
+            const newStatus = document.getElementById('modalNewStatusSelect').value;
+            const remarks = document.getElementById('modalStatusRemarks').value;
+
+            try {
+                const res = await fetch(`/api/complaints/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: newStatus, remarks: remarks })
+                });
+                if (!res.ok) throw new Error('Status update failed');
+                closeStatusModal();
+                showAlert(`Case #${id} successfully updated to ${newStatus}`, 'success');
+                await loadComplaints();
+                if (currentDetailComplaintId == id) {
+                    await openAdminDetailsModal(id);
+                }
+            } catch (err) {
+                alert('Failed to update status: ' + err.message);
+            }
+        }
+
+        async function updateStatusFromDetailsModal() {
+            if (!currentDetailComplaintId) return;
+            const newStatus = document.getElementById('dtlStatusSelect').value;
+            await quickUpdateStatus(currentDetailComplaintId, newStatus);
+        }
+
+        async function openAdminDetailsModal(id) {
+            try {
+                currentDetailComplaintId = id;
+                const res = await fetch(`/api/complaints/${id}`);
+                if (!res.ok) throw new Error('Failed to fetch details');
+                const c = await res.json();
+
+                document.getElementById('dtlCaseNum').innerText = c.complaintNumber || `CS-${c.id}`;
+                document.getElementById('dtlTitle').innerText = c.title || 'Incident Record';
+                document.getElementById('dtlComplainant').innerText = c.userName || 'Anonymous Student';
+                document.getElementById('dtlEmail').innerText = c.userEmail || '';
+                document.getElementById('dtlPlatform').innerText = c.platform || 'N/A';
+                document.getElementById('dtlSeverity').innerHTML = getSeverityBadge(c.detectedSeverity || c.threatLevel);
+                document.getElementById('dtlPriority').innerText = c.priority || 'NORMAL_REVIEW';
+                document.getElementById('dtlPriority').style.color = c.priority === 'IMMEDIATE_ATTENTION' ? '#ef4444' : '#38bdf8';
+                document.getElementById('dtlDescription').innerText = c.description || 'No description';
+
+                // Status and quick action buttons inside modal
+                document.getElementById('dtlStatusBadge').innerHTML = getStatusBadge(c.status);
+                const st = (c.status || 'PENDING').toUpperCase();
+                const sel = document.getElementById('dtlStatusSelect');
+                for (let i = 0; i < sel.options.length; i++) {
+                    if (sel.options[i].value === st) {
+                        sel.selectedIndex = i;
+                        break;
+                    }
+                }
+
+                let quickBtnHtml = '';
+                if (st === 'PENDING' || st === 'SUBMITTED') {
+                    quickBtnHtml = `
+                        <button onclick="quickUpdateStatus(${c.id}, 'REVIEWED')" class="btn btn-secondary btn-sm" style="background: rgba(56, 189, 248, 0.2); border-color: rgba(56, 189, 248, 0.5); color: #38bdf8; font-weight: 700; padding: 0.4rem 0.9rem;">
+                            👁️ Mark as Reviewed
+                        </button>
+                    `;
+                } else if (st === 'REVIEWED' || st === 'UNDER_REVIEW') {
+                    quickBtnHtml = `
+                        <button onclick="quickUpdateStatus(${c.id}, 'ACCEPTED')" class="btn btn-secondary btn-sm" style="background: rgba(16, 185, 129, 0.2); border-color: rgba(16, 185, 129, 0.5); color: #34d399; font-weight: 700; padding: 0.4rem 0.9rem;">
+                            ✅ Accept Complaint
+                        </button>
+                    `;
+                }
+                document.getElementById('dtlQuickActionBtnWrap').innerHTML = quickBtnHtml;
+
+                const evList = document.getElementById('dtlEvidenceList');
+                if (c.evidence && c.evidence.length > 0) {
+                    let evHtml = '<div style="display: flex; gap: 0.75rem; flex-wrap: wrap;">';
+                    c.evidence.forEach(ev => {
+                        evHtml += `
+                            <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.5rem 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                                <span>📸 ${escapeHtml(ev.fileName)}</span>
+                                <span class="badge" style="font-size: 0.72rem;">${ev.verificationStatus}</span>
+                                <a href="${ev.filePath}" target="_blank" style="color: #38bdf8; font-size: 0.8rem; margin-left: 0.25rem;">View File &nearr;</a>
+                            </div>
+                        `;
+                    });
+                    evHtml += '</div>';
+                    evList.innerHTML = evHtml;
+                } else {
+                    evList.innerHTML = '<span style="color: var(--text-muted); font-size: 0.88rem;">No screenshots or digital evidence uploaded.</span>';
+                }
+
+                const remarksWrap = document.getElementById('dtlRemarksWrap');
+                if (c.adminRemarks) {
+                    remarksWrap.style.display = 'block';
+                    document.getElementById('dtlRemarks').innerText = c.adminRemarks;
+                } else {
+                    remarksWrap.style.display = 'none';
+                }
+
+                document.getElementById('dtlActionLinks').innerHTML = `
+                    <a href="/admin/platform-action?complaintId=${c.id}" class="btn btn-primary btn-sm" style="padding: 0.45rem 1rem;">
+                        🌐 Escalate to Platform &rarr;
+                    </a>
+                `;
+
+                document.getElementById('adminDetailsModal').style.display = 'flex';
+            } catch (err) {
+                alert('Could not open details: ' + err.message);
+            }
+        }
+
+        function closeAdminDetailsModal() {
+            document.getElementById('adminDetailsModal').style.display = 'none';
+            currentDetailComplaintId = null;
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            box.style.display = 'block';
+            box.className = type === 'error' ? 'alert alert-error' : 'alert alert-success';
+            box.innerText = msg;
+            setTimeout(() => { box.style.display = 'none'; }, 4000);
+        }
+
+        function getSeverityBadge(sev) {
+            const s = (sev || 'LOW').toUpperCase();
+            if (s === 'CRITICAL') return '<span class="badge badge-critical">CRITICAL</span>';
+            if (s === 'HIGH') return '<span class="badge badge-high">HIGH</span>';
+            if (s === 'MEDIUM') return '<span class="badge badge-medium">MEDIUM</span>';
+            return '<span class="badge badge-low">LOW</span>';
+        }
+
+        function getStatusBadge(status) {
+            const st = (status || 'PENDING').toUpperCase();
+            if (st === 'PENDING' || st === 'SUBMITTED') {
+                return '<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">PENDING</span>';
+            }
+            if (st === 'REVIEWED' || st === 'UNDER_REVIEW') {
+                return '<span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); font-weight: 700;">REVIEWED</span>';
+            }
+            if (st === 'ACCEPTED') {
+                return '<span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700;">ACCEPTED</span>';
+            }
+            if (st === 'INVESTIGATION' || st === 'EVIDENCE_VERIFIED') {
+                return '<span class="badge" style="background: rgba(167, 139, 250, 0.2); color: #a78bfa; border: 1px solid rgba(167, 139, 250, 0.4); font-weight: 700;">INVESTIGATION</span>';
+            }
+            if (st === 'ACTION_TAKEN') {
+                return '<span class="badge" style="background: rgba(14, 165, 233, 0.2); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.4); font-weight: 700;">ACTION TAKEN</span>';
+            }
+            if (st === 'RESOLVED') {
+                return '<span class="badge" style="background: rgba(16, 185, 129, 0.25); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.5); font-weight: 700;">RESOLVED</span>';
+            }
+            if (st === 'REJECTED') {
+                return '<span class="badge badge-critical" style="font-weight: 700;">REJECTED</span>';
+            }
+            return `<span class="badge">${st}</span>`;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function handleAdminLogout() {
+            try {
+                await fetch('/api/users/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('cyberShield_user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

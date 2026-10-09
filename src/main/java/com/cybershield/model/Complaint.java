@@ -28,7 +28,7 @@ public class Complaint {
     private String threatLevel = "LOW";
 
     @Column(nullable = false)
-    private String status = "SUBMITTED";
+    private String status = "PENDING";
 
     @Column(nullable = false)
     private String priority = "NORMAL";
@@ -39,6 +39,11 @@ public class Complaint {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    private LocalDateTime incidentDateTime;
+
+    @Column(columnDefinition = "TEXT")
+    private String adminRemarks;
 
     public Complaint() {
     }
@@ -62,7 +67,7 @@ public class Complaint {
             this.threatLevel = "LOW";
         }
         if (this.status == null || this.status.isBlank()) {
-            this.status = "SUBMITTED";
+            this.status = "PENDING";
         }
         if (this.priority == null || this.priority.isBlank()) {
             this.priority = "NORMAL";
@@ -155,5 +160,21 @@ public class Complaint {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public LocalDateTime getIncidentDateTime() {
+        return incidentDateTime;
+    }
+
+    public void setIncidentDateTime(LocalDateTime incidentDateTime) {
+        this.incidentDateTime = incidentDateTime;
+    }
+
+    public String getAdminRemarks() {
+        return adminRemarks;
+    }
+
+    public void setAdminRemarks(String adminRemarks) {
+        this.adminRemarks = adminRemarks;
     }
 }

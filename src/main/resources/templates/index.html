@@ -3,83 +3,463 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CyberShield – Cyberbullying Complaint Management System</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <title>CyberShield – Cyberbullying Incident Management System</title>
+    <!-- External stylesheet with proper fallback -->
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Embedded Fail-Safe CSS: Guarantees 100% styled layout under any environment -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.85);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(56, 189, 248, 0.6);
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(79, 70, 229, 0.2) 0px, transparent 55%),
+                radial-gradient(at 100% 100%, rgba(6, 182, 212, 0.16) 0px, transparent 55%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Clean Professional Header */
+        .navbar {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.1rem 3rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.45rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-icon {
+            font-size: 1.7rem;
+        }
+
+        .portal-system-tag {
+            font-size: 0.82rem;
+            color: #38bdf8;
+            background: rgba(56, 189, 248, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            padding: 0.35rem 0.85rem;
+            border-radius: 9999px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        /* Container */
+        .landing-container {
+            max-width: 1050px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 3rem 1.5rem 4rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 3.5rem;
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 0.4rem 1.1rem;
+            background: rgba(79, 70, 229, 0.16);
+            border: 1px solid rgba(79, 70, 229, 0.4);
+            border-radius: 9999px;
+            font-size: 0.88rem;
+            color: #818cf8;
+            margin-bottom: 1.25rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            font-size: 3.25rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle-primary {
+            font-size: 1.45rem;
+            font-weight: 600;
+            color: #38bdf8;
+            margin-bottom: 0.85rem;
+        }
+
+        .hero-subtitle-secondary {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 620px;
+            margin: 0 auto;
+        }
+
+        /* EXACT REQUIREMENT: TWO LARGE CARDS SIDE-BY-SIDE */
+        .roles-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2.25rem;
+            width: 100%;
+            max-width: 960px;
+            margin: 0 auto;
+        }
+
+        @media (max-width: 768px) {
+            .roles-grid {
+                grid-template-columns: 1fr;
+            }
+            .hero h1 {
+                font-size: 2.4rem;
+            }
+        }
+
+        /* Large Role Selection Card */
+        .role-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.88) 0%, rgba(13, 22, 45, 0.95) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: 2.75rem 2.25rem 2.25rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.35s ease, box-shadow 0.35s ease;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: transparent;
+            transition: opacity 0.3s ease;
+        }
+
+        .role-card.user-role::before {
+            background: linear-gradient(90deg, #38bdf8, #818cf8);
+        }
+
+        .role-card.admin-role::before {
+            background: linear-gradient(90deg, #0ea5e9, #f59e0b);
+        }
+
+        .role-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
+        }
+
+        .role-card.user-role:hover {
+            border-color: rgba(56, 189, 248, 0.6);
+            box-shadow: 0 24px 50px rgba(14, 165, 233, 0.25);
+        }
+
+        .role-card.admin-role:hover {
+            border-color: rgba(245, 158, 11, 0.6);
+            box-shadow: 0 24px 50px rgba(245, 158, 11, 0.22);
+        }
+
+        .role-icon-box {
+            width: 76px;
+            height: 76px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            transition: transform 0.35s ease;
+        }
+
+        .role-card:hover .role-icon-box {
+            transform: scale(1.1);
+        }
+
+        .user-role .role-icon-box {
+            background: rgba(14, 165, 233, 0.16);
+            border: 1px solid rgba(14, 165, 233, 0.4);
+            box-shadow: inset 0 0 20px rgba(14, 165, 233, 0.15);
+        }
+
+        .admin-role .role-icon-box {
+            background: rgba(245, 158, 11, 0.16);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            box-shadow: inset 0 0 20px rgba(245, 158, 11, 0.15);
+        }
+
+        .role-badge {
+            display: inline-block;
+            font-size: 0.76rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 0.3rem 0.85rem;
+            border-radius: 9999px;
+            margin-bottom: 0.85rem;
+            width: fit-content;
+        }
+
+        .user-role .role-badge {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+        }
+
+        .admin-role .role-badge {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+
+        .role-title {
+            font-size: 1.9rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.02em;
+        }
+
+        .role-desc {
+            color: var(--text-muted);
+            font-size: 1.02rem;
+            line-height: 1.6;
+            margin-bottom: 1.75rem;
+        }
+
+        /* Feature Checklist */
+        .role-checklist {
+            list-style: none;
+            margin-bottom: 2.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .role-checklist li {
+            font-size: 0.96rem;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .check-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            font-size: 0.8rem;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .user-role .check-icon {
+            background: rgba(56, 189, 248, 0.2);
+            color: #38bdf8;
+        }
+
+        .admin-role .check-icon {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+        }
+
+        /* Large Action Buttons */
+        .btn-role {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.6rem;
+            width: 100%;
+            padding: 0.95rem 1.5rem;
+            font-size: 1.05rem;
+            font-weight: 700;
+            border-radius: 12px;
+            text-decoration: none !important;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            margin-top: auto;
+        }
+
+        .btn-user-role {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            color: #ffffff !important;
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            box-shadow: 0 4px 18px rgba(2, 132, 199, 0.35);
+        }
+
+        .btn-user-role:hover {
+            background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+            box-shadow: 0 6px 24px rgba(2, 132, 199, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .btn-admin-role {
+            background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+            color: #ffffff !important;
+            border: 1px solid rgba(129, 140, 248, 0.5);
+            box-shadow: 0 4px 18px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-admin-role:hover {
+            background: linear-gradient(135deg, #4338ca 0%, #312e81 100%);
+            box-shadow: 0 6px 24px rgba(79, 70, 229, 0.5);
+            transform: translateY(-2px);
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
 </head>
 <body>
 
+    <!-- Clean Professional Header -->
     <nav class="navbar">
-        <a th:href="@{/}" class="brand">
+        <a th:href="@{/}" href="/" class="brand">
             <span class="brand-icon">🛡️</span> CyberShield
         </a>
-        <div class="nav-links">
-            <a th:href="@{/}" class="active">Home</a>
-            <a th:href="@{/report}">Report Cyberbullying</a>
-            <a th:href="@{/register}">Register</a>
-            <a th:href="@{/officer}">Officer Portal</a>
+        <div class="portal-system-tag">
+            Cyber Threat Response Platform
         </div>
     </nav>
 
-    <main class="container">
+    <main class="landing-container">
+        <!-- Hero Section -->
         <section class="hero">
-            <div class="hero-badge">Next-Gen Incident Response</div>
-            <h1>CyberShield</h1>
-            <p style="font-weight: 600; color: #a5b4fc; margin-bottom: 0.5rem;">Cyberbullying Complaint Management System</p>
-            <p>Empowering individuals with rapid, safe, and confidential cyberbullying reporting. Features automated severity analysis and streamlined investigation workflows.</p>
-
-            <div class="hero-actions">
-                <a th:href="@{/report}" class="btn btn-primary">⚠️ Report Cyberbullying</a>
-                <a th:href="@{/register}" class="btn btn-secondary">📝 Register Account</a>
-                <button onclick="openLoginModal()" class="btn btn-secondary">🔐 Demo Login</button>
-            </div>
+            <div class="hero-badge">Incident Management System</div>
+            <h1>CYBERSHIELD</h1>
+            <div class="hero-subtitle-primary">Cyberbullying Complaint &amp; Management System</div>
+            <p class="hero-subtitle-secondary">
+                Report cyberbullying incidents, track complaints, and manage digital safety cases securely.
+            </p>
         </section>
 
-        <section class="cards-grid" style="margin-top: 3rem;">
-            <div class="card">
-                <div class="card-title">⚡ Instant Automated Severity</div>
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    Complaints are automatically screened for high-risk cyberbullying terms in English and Tamil to assign preliminary threat levels and triage immediate risks.
-                </p>
+        <!-- EXACTLY TWO MAIN MODULE CARDS: USER AND ADMIN -->
+        <section class="roles-grid">
+            <!-- MODULE 1: USER -->
+            <div class="role-card user-role">
+                <div>
+                    <div class="role-icon-box">👤</div>
+                    <span class="role-badge">Student &amp; Citizen Portal</span>
+                    <h2 class="role-title">USER</h2>
+                    <p class="role-desc">
+                        Report cyberbullying incidents, upload evidence, and track the progress of your complaints.
+                    </p>
+
+                    <ul class="role-checklist">
+                        <li>
+                            <span class="check-icon">&#10003;</span>
+                            <span>Report a complaint</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">&#10003;</span>
+                            <span>Upload screenshot evidence</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">&#10003;</span>
+                            <span>Track complaint status</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <a th:href="@{/user/login}" href="/user/login" class="btn-role btn-user-role">
+                    Continue as User &rarr;
+                </a>
             </div>
-            <div class="card">
-                <div class="card-title">📸 Evidence Preservation</div>
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    Upload screenshot proof directly linked to your case number with tamper-aware verification queues for investigative officers.
-                </p>
-            </div>
-            <div class="card">
-                <div class="card-title">👮 Officer Incident Board</div>
-                <p style="color: var(--text-muted); line-height: 1.6;">
-                    Dedicated triage console for officers to review incoming complaints, update investigation stages, and verify submitted digital evidence.
-                </p>
+
+            <!-- MODULE 2: ADMIN -->
+            <div class="role-card admin-role">
+                <div>
+                    <div class="role-icon-box">🛡️</div>
+                    <span class="role-badge">Law Enforcement &amp; Officer Console</span>
+                    <h2 class="role-title">ADMIN</h2>
+                    <p class="role-desc">
+                        Review complaints, verify evidence, investigate cases, and manage platform actions.
+                    </p>
+
+                    <ul class="role-checklist">
+                        <li>
+                            <span class="check-icon">&#10003;</span>
+                            <span>Review complaints</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">&#10003;</span>
+                            <span>Verify evidence</span>
+                        </li>
+                        <li>
+                            <span class="check-icon">&#10003;</span>
+                            <span>Manage investigations</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <a th:href="@{/admin/login}" href="/admin/login" class="btn-role btn-admin-role">
+                    Continue as Admin &rarr;
+                </a>
             </div>
         </section>
     </main>
 
-    <!-- Demo Login Modal -->
-    <div id="loginModal" class="modal-overlay">
-        <div class="modal-content">
-            <div class="card-title">Demo User / Officer Login</div>
-            <p class="card-subtitle">Select a demo role or sign in with your registered account.</p>
-            <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1rem;">
-                <a th:href="@{/report}" class="btn btn-primary">Continue as Reporter / User</a>
-                <a th:href="@{/officer}" class="btn btn-secondary">Continue to Officer Dashboard</a>
-                <button onclick="closeLoginModal()" class="btn btn-secondary" style="margin-top: 0.5rem;">Close</button>
-            </div>
-        </div>
-    </div>
-
     <footer>
-        CyberShield © 2026 – College Project Backend & Frontend Architecture
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Secure Institutional Portal
     </footer>
 
-    <script>
-        function openLoginModal() {
-            document.getElementById('loginModal').style.display = 'flex';
-        }
-        function closeLoginModal() {
-            document.getElementById('loginModal').style.display = 'none';
-        }
-    </script>
 </body>
 </html>

@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Action Escalations – CyberShield Admin</title>
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+</head>
+<body>
+
+    <!-- Admin Navigation: Dedicated Command Center Bar -->
+    <nav class="navbar">
+        <a th:href="@{/admin/dashboard}" href="/admin/dashboard" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+            <span class="admin-badge" style="background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.4); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.08em; padding: 0.2rem 0.6rem; border-radius: 6px; margin-left: 0.35rem;">ADMIN</span>
+        </a>
+        <div class="nav-links">
+            <a th:href="@{/admin/dashboard}" href="/admin/dashboard" class="nav-link">Dashboard</a>
+            <a th:href="@{/admin/complaints}" href="/admin/complaints" class="nav-link">Complaints</a>
+            <a th:href="@{/admin/evidence}" href="/admin/evidence" class="nav-link">Evidence Review</a>
+            <a th:href="@{/admin/platform-action}" href="/admin/platform-action" class="nav-link active" style="color: #38bdf8;">Platform Action</a>
+            <a th:href="@{/admin/reports}" href="/admin/reports" class="nav-link">Reports &amp; Stats</a>
+            <button onclick="handleAdminLogout()" class="btn-nav-logout" style="background: rgba(255, 255, 255, 0.06); border: 1px solid var(--border-color); color: #cbd5e1; padding: 0.45rem 1.1rem; border-radius: 8px; font-size: 0.88rem; font-weight: 600; cursor: pointer;">
+                🚪 Logout
+            </button>
+        </div>
+    </nav>
+
+    <main class="container-wide">
+        <!-- Top Action Bar -->
+        <div class="back-dashboard-bar">
+            <div>
+                <a th:href="@{/admin/dashboard}" style="color: #38bdf8; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem; margin-bottom: 0.5rem; font-size: 0.9rem;">
+                    &larr; Return to Admin Dashboard
+                </a>
+                <h1 style="font-size: 2rem; font-weight: 800; color: #fff;">Platform Action Escalation 🌐</h1>
+                <p style="color: var(--text-muted); font-size: 0.95rem;">Issue formal takedown notices to social networks, track legal responses, and automatically progress complaints to ACTION_TAKEN.</p>
+            </div>
+            <div style="display: flex; gap: 0.75rem;">
+                <button onclick="openGenerateModal()" class="btn btn-primary btn-sm" style="padding: 0.55rem 1.25rem;">
+                    ➕ New Platform Escalation
+                </button>
+            </div>
+        </div>
+
+        <div id="alertBox" style="display: none; margin-bottom: 1.5rem;"></div>
+
+        <!-- Platform Action Quick Metrics & Contacts -->
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+            <!-- Escalation Statistics -->
+            <div class="metric-grid" style="margin-bottom: 0;">
+                <div class="metric-card">
+                    <span class="metric-label">Total Escalations</span>
+                    <span class="metric-num" id="statPaTotal">0</span>
+                    <span class="metric-sub">Notices generated</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Notices Sent</span>
+                    <span class="metric-num" id="statPaSent" style="color: #10b981;">0</span>
+                    <span class="metric-sub">Dispatched to platform</span>
+                </div>
+                <div class="metric-card">
+                    <span class="metric-label">Draft Pending</span>
+                    <span class="metric-num" id="statPaDraft" style="color: #f59e0b;">0</span>
+                    <span class="metric-sub">Awaiting confirmation</span>
+                </div>
+            </div>
+
+            <!-- Verified Platform Contacts Card -->
+            <div class="card" style="padding: 1.25rem;">
+                <div style="font-weight: 700; color: #fff; font-size: 0.95rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                    <span>🛡️ Configured Platform Channels</span>
+                </div>
+                <div id="contactsList" style="font-size: 0.82rem; color: #cbd5e1; display: flex; flex-direction: column; gap: 0.4rem;">
+                    <div>📸 <strong>Instagram:</strong> safety@instagram.com</div>
+                    <div>💬 <strong>Discord:</strong> trustandsafety@discord.com</div>
+                    <div>🐦 <strong>Twitter/X:</strong> lawenforcement@x.com</div>
+                    <div>▶️ <strong>YouTube:</strong> abuse@youtube.com</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Platform Action History Section -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div>
+                    <h3 style="color: #fff; font-size: 1.25rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span>📋</span> Action History (Simulation Log)
+                    </h3>
+                    <p style="color: var(--text-muted); font-size: 0.88rem;">Official communications sent to intermediary platform legal safety desks (College Project Simulation).</p>
+                </div>
+                <button onclick="loadPlatformActions()" class="btn btn-secondary btn-sm" style="padding: 0.35rem 0.8rem;">
+                    🔄 Refresh Log
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Notice Type</th>
+                            <th>Case Reference</th>
+                            <th>Platform / Destination</th>
+                            <th>Recipient</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="platformActionsTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">Loading action history...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Generate Platform Action Modal -->
+        <div id="generateModal" class="modal-overlay">
+            <div class="modal-content modal-content-lg">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+                    <div>
+                        <h3 style="color: #fff;">Generate Platform Notice</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Select complaint to auto-generate personalized formal legal takedown notice.</p>
+                    </div>
+                    <button onclick="closeGenerateModal()" class="btn btn-secondary btn-sm">&times;</button>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Select Incident Complaint Case</label>
+                    <select id="genComplaintSelect" class="form-select" onchange="onComplaintSelectChange()">
+                        <option value="">-- Choose Complaint --</option>
+                    </select>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form-group">
+                        <label class="form-label">Platform Destination</label>
+                        <select id="genPlatformSelect" class="form-select">
+                            <option value="Instagram">Instagram</option>
+                            <option value="WhatsApp">WhatsApp</option>
+                            <option value="Discord">Discord</option>
+                            <option value="Twitter/X">Twitter/X</option>
+                            <option value="YouTube">YouTube</option>
+                            <option value="Snapchat">Snapchat</option>
+                            <option value="Facebook">Facebook</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reported Violator Handle / Account</label>
+                        <input type="text" id="genAccountInput" class="form-control" placeholder="@username or handle">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Officer In-Charge Name</label>
+                    <input type="text" id="genOfficerInput" class="form-control" value="Inspector K. Raman">
+                </div>
+
+                <!-- Preview Box -->
+                <div id="generatedNoticePreviewWrap" style="display: none; margin-top: 1.25rem; background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.25rem;">
+                    <h4 style="color: #38bdf8; margin-bottom: 0.75rem;">Escalation Notice Preview</h4>
+                    <div class="form-group">
+                        <label class="form-label">Recipient Safety Desk</label>
+                        <input type="text" id="previewRecipient" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Subject</label>
+                        <input type="text" id="previewSubject" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Legal Notice Body (Fully Editable)</label>
+                        <textarea id="previewMessage" class="form-control" rows="8" style="font-family: monospace; font-size: 0.88rem;"></textarea>
+                    </div>
+                    <input type="hidden" id="currentGeneratedActionId">
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                    <button onclick="closeGenerateModal()" class="btn btn-secondary btn-sm" style="padding: 0.5rem 1rem;">Cancel</button>
+                    <button id="btnGeneratePreview" onclick="generatePlatformActionNotice()" class="btn btn-secondary btn-sm" style="padding: 0.5rem 1.25rem;">
+                        ⚡ Generate Formal Draft
+                    </button>
+                    <button id="btnSendWhatsApp" onclick="sendSimulatedWhatsAppNotice()" class="btn btn-secondary btn-sm" style="display: none; background: rgba(37, 211, 102, 0.15); border: 1px solid #25d366; color: #25d366; font-weight: 700; padding: 0.5rem 1.2rem;">
+                        📱 Send WhatsApp Notice
+                    </button>
+                    <button id="btnSendEmail" onclick="sendSimulatedEmailNotice()" class="btn btn-primary btn-sm" style="display: none; padding: 0.5rem 1.3rem;">
+                        ✉️ Send Email
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- WhatsApp Simulation Confirmation Modal -->
+        <div id="whatsappSimModal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 480px; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 0.75rem;">✅</div>
+                <h3 style="color: #fff; margin-bottom: 0.5rem;">WhatsApp Notice Simulated</h3>
+                <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.25rem;">
+                    The notification has been prepared successfully.
+                </p>
+                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.1rem; text-align: left; margin-bottom: 1.25rem; font-size: 0.9rem;">
+                    <div style="margin-bottom: 0.6rem;">
+                        <span style="color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Destination:</span>
+                        <strong id="waSimDest" style="color: #fff; font-size: 1rem;">Instagram</strong>
+                    </div>
+                    <div style="margin-bottom: 0.6rem;">
+                        <span style="color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Recipient:</span>
+                        <code id="waSimRecip" style="color: #38bdf8; font-size: 0.95rem;">@username</code>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Status:</span>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4);">SIMULATED / SENT</span>
+                    </div>
+                </div>
+                <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 1.25rem; line-height: 1.4;">
+                    ⚠️ This is a demonstration only. No external message was sent.
+                </p>
+                <button onclick="closeWaSimModal()" class="btn btn-primary btn-sm" style="padding: 0.5rem 1.75rem;">Done</button>
+            </div>
+        </div>
+
+        <!-- Email Simulation Confirmation Modal -->
+        <div id="emailSimModal" class="modal-overlay">
+            <div class="modal-content" style="max-width: 480px; text-align: center;">
+                <div style="font-size: 3rem; margin-bottom: 0.75rem;">✉️</div>
+                <h3 style="color: #fff; margin-bottom: 0.5rem;">Email Sent Successfully</h3>
+                <p style="color: var(--text-muted); font-size: 0.92rem; margin-bottom: 1.25rem;">
+                    Platform escalation email has been dispatched (Simulated).
+                </p>
+                <div style="background: rgba(15, 23, 42, 0.8); border: 1px solid var(--border-color); border-radius: 8px; padding: 1.1rem; text-align: left; margin-bottom: 1.25rem; font-size: 0.9rem;">
+                    <div style="margin-bottom: 0.6rem;">
+                        <span style="color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Recipient:</span>
+                        <strong id="emailSimRecip" style="color: #38bdf8; font-size: 0.95rem;">cybershield.demo@gmail.com</strong>
+                    </div>
+                    <div style="margin-bottom: 0.6rem;">
+                        <span style="color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Subject:</span>
+                        <span id="emailSimSubj" style="color: #fff; font-size: 0.92rem;">Cyberbullying Complaint – CS-2026-014</span>
+                    </div>
+                    <div>
+                        <span style="color: #94a3b8; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; display: block;">Status:</span>
+                        <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; font-weight: 700; border: 1px solid rgba(16, 185, 129, 0.4);">SIMULATED / SENT</span>
+                    </div>
+                </div>
+                <p style="color: #94a3b8; font-size: 0.82rem; margin-bottom: 1.25rem; line-height: 1.4;">
+                    ⚠️ This is a demonstration only. No external email was sent.
+                </p>
+                <button onclick="closeEmailSimModal()" class="btn btn-primary btn-sm" style="padding: 0.5rem 1.75rem;">Done</button>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Platform Action Module
+    </footer>
+
+    <script>
+        let complaintsList = [];
+        let platformActionsList = [];
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            await loadPlatformContacts();
+            await loadComplaintsDropdown();
+            await loadPlatformActions();
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const preselectedId = urlParams.get('complaintId');
+            if (preselectedId) {
+                openGenerateModal(preselectedId);
+            }
+        });
+
+        async function loadPlatformContacts() {
+            try {
+                const res = await fetch('/api/platform-actions/contacts');
+                if (res.ok) {
+                    const contacts = await res.json();
+                    let html = '';
+                    for (const [platform, email] of Object.entries(contacts)) {
+                        html += `<div><strong>${escapeHtml(platform)}:</strong> ${escapeHtml(email)}</div>`;
+                    }
+                    if (html) document.getElementById('contactsList').innerHTML = html;
+                }
+            } catch (e) {}
+        }
+
+        async function loadComplaintsDropdown() {
+            try {
+                const res = await fetch('/api/complaints');
+                if (res.ok) {
+                    complaintsList = await res.json();
+                    const sel = document.getElementById('genComplaintSelect');
+                    sel.innerHTML = '<option value="">-- Choose Complaint --</option>';
+                    complaintsList.forEach(c => {
+                        const num = c.complaintNumber || `CS-${c.id}`;
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.innerText = `${num} - ${c.title || 'Incident'} (${c.platform || 'Online'})`;
+                        sel.appendChild(opt);
+                    });
+                }
+            } catch (e) {}
+        }
+
+        function onComplaintSelectChange() {
+            const cid = document.getElementById('genComplaintSelect').value;
+            const c = complaintsList.find(item => item.id == cid);
+            if (c) {
+                if (c.platform) {
+                    const pSel = document.getElementById('genPlatformSelect');
+                    for (let i = 0; i < pSel.options.length; i++) {
+                        if (pSel.options[i].value.toLowerCase() === c.platform.toLowerCase()) {
+                            pSel.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        async function loadPlatformActions() {
+            try {
+                const res = await fetch('/api/platform-actions');
+                if (!res.ok) throw new Error('Failed to load actions');
+                platformActionsList = await res.json();
+                updatePaStats(platformActionsList);
+                renderPlatformActionsTable(platformActionsList);
+            } catch (err) {
+                console.error(err);
+                showAlert('Error loading platform actions: ' + err.message, 'error');
+            }
+        }
+
+        function updatePaStats(list) {
+            let total = list.length;
+            let sent = 0;
+            let draft = 0;
+
+            list.forEach(a => {
+                if (a.actionStatus === 'SENT') sent++;
+                else draft++;
+            });
+
+            document.getElementById('statPaTotal').innerText = total;
+            document.getElementById('statPaSent').innerText = sent;
+            document.getElementById('statPaDraft').innerText = draft;
+        }
+
+        function renderPlatformActionsTable(list) {
+            const tbody = document.getElementById('platformActionsTableBody');
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 2rem;">No platform actions dispatched yet.</td></tr>';
+                return;
+            }
+
+            let html = '';
+            list.forEach(a => {
+                const isWhatsApp = (a.subject && a.subject.includes('WhatsApp')) || (a.platform && a.platform.toLowerCase().includes('whatsapp'));
+                const noticeTypeLabel = isWhatsApp ? '📱 WhatsApp Notice' : '✉️ Email Notice';
+
+                let badge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">DRAFT</span>';
+                if (a.actionStatus === 'SENT') {
+                    badge = '<span class="badge" style="background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); font-weight: 700;">SIMULATED / SENT</span>';
+                } else if (a.actionStatus === 'FAILED') {
+                    badge = '<span class="badge badge-critical">FAILED</span>';
+                }
+
+                const dateStr = a.sentAt ? formatDateSimple(a.sentAt) : (a.createdAt ? formatDateSimple(a.createdAt) : '30 Sep 2026');
+
+                html += `
+                    <tr>
+                        <td style="font-weight: 700; color: #fff;">${noticeTypeLabel}</td>
+                        <td style="font-weight: 700; color: #38bdf8; font-family: monospace;">${escapeHtml(a.complaintNumber || 'N/A')}</td>
+                        <td>${escapeHtml(a.platform || 'Online')}</td>
+                        <td><code>${escapeHtml(a.recipient || a.reportedAccount || 'cybershield.demo@gmail.com')}</code></td>
+                        <td>${badge}</td>
+                        <td style="color: var(--text-muted); font-size: 0.88rem;">${dateStr}</td>
+                        <td>
+                            ${a.actionStatus !== 'SENT' ? `
+                                <div style="display: flex; gap: 0.35rem;">
+                                    <button onclick="quickSendSimulated(${a.id}, 'wa')" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem; color: #25d366; border-color: rgba(37, 211, 102, 0.4);">
+                                        📱 WhatsApp
+                                    </button>
+                                    <button onclick="quickSendSimulated(${a.id}, 'email')" class="btn btn-primary btn-sm" style="font-size: 0.75rem; padding: 0.2rem 0.5rem;">
+                                        ✉️ Email
+                                    </button>
+                                </div>
+                            ` : `
+                                <span style="font-size: 0.82rem; color: #34d399; font-weight: 600;">✓ Dispatched</span>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function openGenerateModal(preselectedId) {
+            document.getElementById('generateModal').style.display = 'flex';
+            document.getElementById('generatedNoticePreviewWrap').style.display = 'none';
+            document.getElementById('btnSendWhatsApp').style.display = 'none';
+            document.getElementById('btnSendEmail').style.display = 'none';
+            document.getElementById('btnGeneratePreview').style.display = 'inline-block';
+
+            if (preselectedId) {
+                document.getElementById('genComplaintSelect').value = preselectedId;
+                onComplaintSelectChange();
+            }
+        }
+
+        function closeGenerateModal() {
+            document.getElementById('generateModal').style.display = 'none';
+        }
+
+        function closeWaSimModal() {
+            document.getElementById('whatsappSimModal').style.display = 'none';
+        }
+
+        function closeEmailSimModal() {
+            document.getElementById('emailSimModal').style.display = 'none';
+        }
+
+        async function generatePlatformActionNotice() {
+            const complaintId = document.getElementById('genComplaintSelect').value;
+            if (!complaintId) {
+                alert('Please select a complaint incident first.');
+                return;
+            }
+
+            const platform = document.getElementById('genPlatformSelect').value;
+            const reportedAccount = document.getElementById('genAccountInput').value || '@unknown';
+            const officerName = document.getElementById('genOfficerInput').value || 'Inspector K. Raman';
+
+            try {
+                const res = await fetch('/api/platform-actions/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        complaintId: parseInt(complaintId),
+                        platform: platform,
+                        reportedAccount: reportedAccount,
+                        adminOfficerName: officerName
+                    })
+                });
+
+                if (!res.ok) throw new Error('Notice generation failed');
+                const action = await res.json();
+
+                document.getElementById('currentGeneratedActionId').value = action.id;
+                document.getElementById('previewRecipient').value = action.recipient || 'cybershield.demo@gmail.com';
+                document.getElementById('previewSubject').value = action.subject || '';
+                document.getElementById('previewMessage').value = action.message || '';
+
+                document.getElementById('generatedNoticePreviewWrap').style.display = 'block';
+                document.getElementById('btnSendWhatsApp').style.display = 'inline-block';
+                document.getElementById('btnSendEmail').style.display = 'inline-block';
+                document.getElementById('btnGeneratePreview').innerText = 'Regenerate Draft';
+            } catch (err) {
+                alert('Failed to generate notice: ' + err.message);
+            }
+        }
+
+        async function sendSimulatedWhatsAppNotice() {
+            const actionId = document.getElementById('currentGeneratedActionId').value;
+            if (!actionId) return;
+
+            const platform = document.getElementById('genPlatformSelect').value || 'Instagram';
+            const reportedAccount = document.getElementById('genAccountInput').value || '@username';
+            const message = document.getElementById('previewMessage').value;
+
+            try {
+                // Update recipient to reported account / handle and subject to WhatsApp Notice
+                await fetch(`/api/platform-actions/${actionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient: reportedAccount,
+                        subject: `WhatsApp Escalation Notice: ${platform}`,
+                        message: message
+                    })
+                });
+
+                const sendRes = await fetch(`/api/platform-actions/${actionId}/send`, { method: 'POST' });
+                if (!sendRes.ok) throw new Error('Dispatch failed');
+
+                closeGenerateModal();
+                await loadPlatformActions();
+
+                // Open simulated WhatsApp notice modal
+                document.getElementById('waSimDest').innerText = platform;
+                document.getElementById('waSimRecip').innerText = reportedAccount;
+                document.getElementById('whatsappSimModal').style.display = 'flex';
+            } catch (err) {
+                alert('Simulation error: ' + err.message);
+            }
+        }
+
+        async function sendSimulatedEmailNotice() {
+            const actionId = document.getElementById('currentGeneratedActionId').value;
+            if (!actionId) return;
+
+            const dummyEmail = 'cybershield.demo@gmail.com';
+            const selectedC = complaintsList.find(c => c.id == document.getElementById('genComplaintSelect').value);
+            const complaintNum = selectedC ? (selectedC.complaintNumber || `CS-${selectedC.id}`) : 'CS-2026-014';
+            const subject = `Cyberbullying Complaint – ${complaintNum}`;
+            const message = document.getElementById('previewMessage').value;
+
+            try {
+                await fetch(`/api/platform-actions/${actionId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient: dummyEmail,
+                        subject: subject,
+                        message: message
+                    })
+                });
+
+                const sendRes = await fetch(`/api/platform-actions/${actionId}/send`, { method: 'POST' });
+                if (!sendRes.ok) throw new Error('Dispatch failed');
+
+                closeGenerateModal();
+                await loadPlatformActions();
+
+                // Open simulated Email notice modal
+                document.getElementById('emailSimRecip').innerText = dummyEmail;
+                document.getElementById('emailSimSubj').innerText = subject;
+                document.getElementById('emailSimModal').style.display = 'flex';
+            } catch (err) {
+                alert('Simulation error: ' + err.message);
+            }
+        }
+
+        async function quickSendSimulated(id, mode) {
+            const a = platformActionsList.find(item => item.id === id);
+            try {
+                if (mode === 'wa') {
+                    const sendRes = await fetch(`/api/platform-actions/${id}/send`, { method: 'POST' });
+                    if (!sendRes.ok) throw new Error('Failed to dispatch');
+                    await loadPlatformActions();
+                    document.getElementById('waSimDest').innerText = a ? (a.platform || 'Instagram') : 'Instagram';
+                    document.getElementById('waSimRecip').innerText = a ? (a.reportedAccount || '@username') : '@username';
+                    document.getElementById('whatsappSimModal').style.display = 'flex';
+                } else {
+                    const sendRes = await fetch(`/api/platform-actions/${id}/send`, { method: 'POST' });
+                    if (!sendRes.ok) throw new Error('Failed to dispatch');
+                    await loadPlatformActions();
+                    document.getElementById('emailSimRecip').innerText = 'cybershield.demo@gmail.com';
+                    document.getElementById('emailSimSubj').innerText = a ? `Cyberbullying Complaint – ${a.complaintNumber}` : 'Cyberbullying Complaint – CS-2026-014';
+                    document.getElementById('emailSimModal').style.display = 'flex';
+                }
+            } catch (err) {
+                showAlert('Failed to dispatch simulated notice: ' + err.message, 'error');
+            }
+        }
+
+        function formatDateSimple(isoStr) {
+            try {
+                const d = new Date(isoStr);
+                const day = d.getDate();
+                return `${day} ${months[d.getMonth()]} ${d.getFullYear()}`;
+            } catch (e) {
+                return '30 Sep 2026';
+            }
+        }
+
+        function showAlert(msg, type) {
+            const box = document.getElementById('alertBox');
+            box.style.display = 'block';
+            box.className = type === 'error' ? 'alert alert-error' : 'alert alert-success';
+            box.innerText = msg;
+            setTimeout(() => { box.style.display = 'none'; }, 4000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function handleAdminLogout() {
+            try {
+                await fetch('/api/users/logout', { method: 'POST' });
+            } catch (e) {}
+            localStorage.removeItem('cyberShield_user');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

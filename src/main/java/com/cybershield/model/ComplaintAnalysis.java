@@ -19,6 +19,14 @@ public class ComplaintAnalysis {
 
     private String priority;
 
+    private String detectedCategory;
+
+    @Column(length = 1000)
+    private String matchedTerms;
+
+    @Column(length = 1000)
+    private String assessmentNote;
+
     @Column(nullable = false)
     private LocalDateTime analysisDate;
 
@@ -31,10 +39,19 @@ public class ComplaintAnalysis {
 
     public ComplaintAnalysis(Integer matchedCount, Integer riskScore, String detectedSeverity,
                              String priority, Complaint complaint) {
+        this(matchedCount, riskScore, detectedSeverity, priority, null, null, null, complaint);
+    }
+
+    public ComplaintAnalysis(Integer matchedCount, Integer riskScore, String detectedSeverity,
+                             String priority, String detectedCategory, String matchedTerms,
+                             String assessmentNote, Complaint complaint) {
         this.matchedCount = matchedCount;
         this.riskScore = riskScore;
         this.detectedSeverity = detectedSeverity;
         this.priority = priority;
+        this.detectedCategory = detectedCategory;
+        this.matchedTerms = matchedTerms;
+        this.assessmentNote = assessmentNote;
         this.complaint = complaint;
     }
 
@@ -83,6 +100,30 @@ public class ComplaintAnalysis {
 
     public void setPriority(String priority) {
         this.priority = priority;
+    }
+
+    public String getDetectedCategory() {
+        return detectedCategory;
+    }
+
+    public void setDetectedCategory(String detectedCategory) {
+        this.detectedCategory = detectedCategory;
+    }
+
+    public String getMatchedTerms() {
+        return matchedTerms;
+    }
+
+    public void setMatchedTerms(String matchedTerms) {
+        this.matchedTerms = matchedTerms;
+    }
+
+    public String getAssessmentNote() {
+        return assessmentNote;
+    }
+
+    public void setAssessmentNote(String assessmentNote) {
+        this.assessmentNote = assessmentNote;
     }
 
     public LocalDateTime getAnalysisDate() {

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Portal Authentication – CyberShield</title>
+    <!-- External stylesheet with proper fallback -->
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Embedded Fail-Safe CSS: Guarantees 100% styled layout under any environment -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.88);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(56, 189, 248, 0.6);
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.18) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(99, 102, 241, 0.14) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+
+        .nav-back-link {
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: color 0.2s;
+        }
+
+        .nav-back-link:hover {
+            color: #ffffff;
+        }
+
+        .auth-container {
+            max-width: 500px;
+            width: 100%;
+            margin: 3.5rem auto 4rem;
+            padding: 0 1.25rem;
+            flex: 1;
+        }
+
+        .auth-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.92) 0%, rgba(13, 22, 45, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+            padding: 2.75rem 2.25rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(14, 165, 233, 0.12);
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 1.75rem;
+        }
+
+        .auth-icon-badge {
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: rgba(14, 165, 233, 0.16);
+            border: 1px solid rgba(14, 165, 233, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1.1rem;
+            box-shadow: inset 0 0 18px rgba(14, 165, 233, 0.15);
+        }
+
+        .auth-title {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.02em;
+        }
+
+        .auth-subtitle {
+            color: var(--text-muted);
+            font-size: 0.94rem;
+            line-height: 1.5;
+        }
+
+        /* Professional Tab Switcher */
+        .auth-tabs {
+            display: flex;
+            background: rgba(10, 15, 29, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.35rem;
+            margin-bottom: 2rem;
+            gap: 0.35rem;
+        }
+
+        .auth-tab-btn {
+            flex: 1;
+            padding: 0.65rem 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            font-weight: 700;
+            border-radius: 9px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+        }
+
+        .auth-tab-btn.active {
+            background: #0284c7;
+            color: #ffffff;
+            box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 1.35rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.85rem 1.15rem;
+            background: rgba(10, 15, 29, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 0.96rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.95rem 1.5rem;
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+            border: 1px solid rgba(56, 189, 248, 0.5);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 18px rgba(2, 132, 199, 0.35);
+            margin-top: 0.5rem;
+        }
+
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+            box-shadow: 0 6px 24px rgba(2, 132, 199, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .alert-box {
+            padding: 0.85rem 1.15rem;
+            border-radius: 10px;
+            margin-bottom: 1.35rem;
+            font-size: 0.92rem;
+            line-height: 1.45;
+            display: none;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .demo-divider {
+            margin: 1.75rem 0 1.25rem;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .demo-divider::before, .demo-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .demo-divider span {
+            padding: 0 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-demo {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-demo:hover {
+            background: rgba(56, 189, 248, 0.12);
+            border-color: rgba(56, 189, 248, 0.4);
+            color: #38bdf8;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" href="/" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <a th:href="@{/}" href="/" class="nav-back-link">
+            &larr; Return to Home
+        </a>
+    </nav>
+
+    <main class="auth-container">
+        <div class="auth-card">
+            <!-- Header -->
+            <div class="auth-header">
+                <div class="auth-icon-badge">👤</div>
+                <h1 class="auth-title">USER PORTAL</h1>
+                <p class="auth-subtitle" id="authSubtitle">
+                    Access your account or register to file cyberbullying incident reports.
+                </p>
+            </div>
+
+            <!-- Tab Switcher: Login / Register -->
+            <div class="auth-tabs">
+                <button type="button" class="auth-tab-btn active" id="tabBtnLogin" onclick="switchAuthTab('login')">
+                    🔑 Login
+                </button>
+                <button type="button" class="auth-tab-btn" id="tabBtnRegister" onclick="switchAuthTab('register')">
+                    📝 Register
+                </button>
+            </div>
+
+            <div id="authAlert" class="alert-box"></div>
+
+            <!-- 1. LOGIN FORM -->
+            <form id="loginFormSection" onsubmit="handleUserLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="loginEmail">Email / Username</label>
+                    <input type="email" id="loginEmail" class="form-control" placeholder="user@gmail.com" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="loginSubmitBtn" class="btn-submit">
+                    Sign In to User Dashboard &rarr;
+                </button>
+
+                <div class="demo-divider">
+                    <span>Quick Testing Access</span>
+                </div>
+
+                <button type="button" onclick="fillDemoAndLogin()" class="btn-demo">
+                    ⚡ Quick Demo Student Login (student@cybershield.edu)
+                </button>
+            </form>
+
+            <!-- 2. REGISTER FORM -->
+            <form id="registerFormSection" onsubmit="handleUserRegister(event)" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label" for="regFullName">Full Name</label>
+                    <input type="text" id="regFullName" class="form-control" placeholder="e.g. Hari Kumar" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" class="form-control" placeholder="hari@example.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="regPhone">Phone Number</label>
+                    <input type="tel" id="regPhone" class="form-control" placeholder="+91 98401 23456" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="regPassword">Password</label>
+                    <input type="password" id="regPassword" class="form-control" placeholder="Minimum 6 characters" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" class="form-control" placeholder="Re-enter password" required>
+                </div>
+
+                <button type="submit" id="regSubmitBtn" class="btn-submit">
+                    Register User Account &rarr;
+                </button>
+            </form>
+
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; User Security Portal
+    </footer>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.location.hash === '#register') {
+                switchAuthTab('register');
+            }
+        });
+
+        function switchAuthTab(tab) {
+            const loginForm = document.getElementById('loginFormSection');
+            const regForm = document.getElementById('registerFormSection');
+            const btnLogin = document.getElementById('tabBtnLogin');
+            const btnReg = document.getElementById('tabBtnRegister');
+            const alertBox = document.getElementById('authAlert');
+            alertBox.style.display = 'none';
+
+            if (tab === 'register') {
+                loginForm.style.display = 'none';
+                regForm.style.display = 'block';
+                btnLogin.classList.remove('active');
+                btnReg.classList.add('active');
+                document.getElementById('authSubtitle').innerText = 'Create an account to submit confidential cyberbullying reports.';
+            } else {
+                loginForm.style.display = 'block';
+                regForm.style.display = 'none';
+                btnReg.classList.remove('active');
+                btnLogin.classList.add('active');
+                document.getElementById('authSubtitle').innerText = 'Sign in with your registered email and secure password.';
+            }
+        }
+
+        async function handleUserLogin(event) {
+            if (event) event.preventDefault();
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            const submitBtn = document.getElementById('loginSubmitBtn');
+
+            if (!email || !password) {
+                showAlert('Please provide both email and password.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Verifying Credentials...';
+
+            try {
+                const response = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('cyberShield_user', JSON.stringify(data));
+                    window.location.href = '/user/dashboard';
+                } else {
+                    showAlert(data.error || 'Invalid email or password.', 'error');
+                }
+            } catch (err) {
+                showAlert('Connection error: ' + err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Sign In to User Dashboard \u2192';
+            }
+        }
+
+        async function handleUserRegister(event) {
+            event.preventDefault();
+            const name = document.getElementById('regFullName').value.trim();
+            const email = document.getElementById('regEmail').value.trim();
+            const phone = document.getElementById('regPhone').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirmPassword').value;
+            const submitBtn = document.getElementById('regSubmitBtn');
+
+            if (password !== confirm) {
+                showAlert('Passwords do not match. Please re-enter.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Creating Account...';
+
+            try {
+                const response = await fetch('/api/users/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, phone, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAlert('Account registered successfully! Signing in...', 'success');
+                    // Automatically log in
+                    const loginRes = await fetch('/api/users/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+                    if (loginRes.ok) {
+                        const userData = await loginRes.json();
+                        localStorage.setItem('cyberShield_user', JSON.stringify(userData));
+                        setTimeout(() => {
+                            window.location.href = '/user/dashboard';
+                        }, 500);
+                    } else {
+                        switchAuthTab('login');
+                        document.getElementById('loginEmail').value = email;
+                    }
+                } else {
+                    showAlert(data.error || 'Registration failed.', 'error');
+                }
+            } catch (err) {
+                showAlert('Connection error: ' + err.message, 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Register User Account \u2192';
+            }
+        }
+
+        async function fillDemoAndLogin() {
+            document.getElementById('loginEmail').value = 'student@cybershield.edu';
+            document.getElementById('loginPassword').value = 'password123';
+            await handleUserLogin(null);
+        }
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('authAlert');
+            alert.className = type === 'error' ? 'alert-box alert-error' : 'alert-box alert-success';
+            alert.innerText = msg;
+            alert.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -18,32 +18,48 @@ public class DataSourceConfig {
 
     private static final Logger log = LoggerFactory.getLogger(DataSourceConfig.class);
 
-    @Value("${spring.datasource.url:jdbc:mysql://localhost:3306/cybershield_db}")
+    @Value("${spring.datasource.url:jdbc:postgresql://localhost:5432/cybershield_db}")
+    private String postgresUrl;
+
+    @Value("${spring.datasource.username:postgres}")
+    private String postgresUsername;
+
+    @Value("${spring.datasource.password:Hari@2008}")
+    private String postgresPassword;
+
+    @Value("${spring.datasource.mysql.url:jdbc:mysql://localhost:3306/cybershield_db}")
     private String mysqlUrl;
 
-    @Value("${spring.datasource.username:root}")
+    @Value("${spring.datasource.mysql.username:root}")
     private String mysqlUsername;
 
-    @Value("${spring.datasource.password:root}")
+    @Value("${spring.datasource.mysql.password:root}")
     private String mysqlPassword;
 
     @Bean
     @Primary
     public DataSource dataSource() {
+        boolean postgresAvailable = isPortOpen("localhost", 5432, 1200);
         boolean mysqlAvailable = isPortOpen("localhost", 3306, 1200);
         HikariConfig config = new HikariConfig();
 
-        if (mysqlAvailable) {
+        if (postgresAvailable) {
+            log.info("Detected PostgreSQL server on port 5432. Connecting to PostgreSQL cybershield_db...");
+            config.setJdbcUrl(postgresUrl);
+            config.setUsername(postgresUsername);
+            config.setPassword(postgresPassword);
+            config.setDriverClassName("org.postgresql.Driver");
+        } else if (mysqlAvailable) {
             log.info("Detected MySQL server on port 3306. Connecting to MySQL cybershield_db...");
             config.setJdbcUrl(mysqlUrl);
             config.setUsername(mysqlUsername);
             config.setPassword(mysqlPassword);
             config.setDriverClassName("com.mysql.cj.jdbc.Driver");
         } else {
-            log.warn("MySQL server not detected on localhost:3306. Automatically using in-memory demo database for presentation...");
-            config.setJdbcUrl("jdbc:h2:mem:cybershield_db;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE");
-            config.setUsername("root");
-            config.setPassword("root");
+            log.warn("Neither PostgreSQL nor MySQL server detected. Automatically using in-memory demo database for presentation...");
+            config.setJdbcUrl("jdbc:h2:mem:cybershield_db;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE");
+            config.setUsername("sa");
+            config.setPassword("");
             config.setDriverClassName("org.h2.Driver");
         }
 

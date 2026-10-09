@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal Authentication – CyberShield</title>
+    <!-- External stylesheet with proper fallback -->
+    <link rel="stylesheet" href="/css/style.css" th:href="@{/css/style.css}">
+    
+    <!-- Embedded Fail-Safe CSS -->
+    <style>
+        :root {
+            --bg-primary: #0a0f1d;
+            --bg-secondary: #111a33;
+            --bg-card: rgba(20, 31, 61, 0.88);
+            --border-color: rgba(255, 255, 255, 0.12);
+            --border-hover: rgba(245, 158, 11, 0.6);
+            --primary: #4f46e5;
+            --cyan: #38bdf8;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            background-image: 
+                radial-gradient(at 0% 0%, rgba(245, 158, 11, 0.16) 0px, transparent 50%),
+                radial-gradient(at 100% 100%, rgba(79, 70, 229, 0.18) 0px, transparent 50%);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .brand-icon {
+            font-size: 1.6rem;
+        }
+
+        .nav-back-link {
+            color: #fbbf24;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: color 0.2s;
+        }
+
+        .nav-back-link:hover {
+            color: #ffffff;
+        }
+
+        .auth-container {
+            max-width: 500px;
+            width: 100%;
+            margin: 3.5rem auto 4rem;
+            padding: 0 1.25rem;
+            flex: 1;
+        }
+
+        .auth-card {
+            background: linear-gradient(180deg, rgba(22, 33, 62, 0.92) 0%, rgba(13, 22, 45, 0.98) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: var(--radius-lg);
+            padding: 2.75rem 2.25rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55), 0 0 30px rgba(245, 158, 11, 0.12);
+            position: relative;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #f59e0b, #4f46e5);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .auth-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .auth-icon-badge {
+            width: 68px;
+            height: 68px;
+            border-radius: 20px;
+            background: rgba(245, 158, 11, 0.16);
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1.1rem;
+            box-shadow: inset 0 0 18px rgba(245, 158, 11, 0.15);
+        }
+
+        .auth-title {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 0.35rem;
+            letter-spacing: -0.02em;
+        }
+
+        .auth-subtitle {
+            color: var(--text-muted);
+            font-size: 0.94rem;
+            line-height: 1.5;
+        }
+
+        .form-group {
+            margin-bottom: 1.35rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #cbd5e1;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.85rem 1.15rem;
+            background: rgba(10, 15, 29, 0.8);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 0.96rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-control:focus {
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .btn-admin-submit {
+            width: 100%;
+            padding: 0.95rem 1.5rem;
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 18px rgba(217, 119, 6, 0.35);
+            margin-top: 0.5rem;
+        }
+
+        .btn-admin-submit:hover {
+            background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+            box-shadow: 0 6px 24px rgba(217, 119, 6, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .alert-box {
+            padding: 0.85rem 1.15rem;
+            border-radius: 10px;
+            margin-bottom: 1.35rem;
+            font-size: 0.92rem;
+            line-height: 1.45;
+            display: none;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #6ee7b7;
+        }
+
+        .demo-divider {
+            margin: 1.75rem 0 1.25rem;
+            display: flex;
+            align-items: center;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .demo-divider::before, .demo-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .demo-divider span {
+            padding: 0 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-demo {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: #cbd5e1;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-demo:hover {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a th:href="@{/}" href="/" class="brand">
+            <span class="brand-icon">🛡️</span> CyberShield
+        </a>
+        <a th:href="@{/}" href="/" class="nav-back-link">
+            &larr; Return to Home
+        </a>
+    </nav>
+
+    <main class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-icon-badge">🛡️</div>
+                <h1 class="auth-title">ADMIN PORTAL</h1>
+                <p class="auth-subtitle">
+                    Authorized console for cyber safety officers &amp; case administrators.
+                </p>
+            </div>
+
+            <div id="adminLoginAlert" class="alert-box"></div>
+
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)">
+                <div class="form-group">
+                    <label class="form-label" for="adminEmail">Officer Badge ID / Email</label>
+                    <input type="text" id="adminEmail" class="form-control" placeholder="admin@cybershield.gov" required autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="adminPassword">Security Key / Password</label>
+                    <input type="password" id="adminPassword" class="form-control" placeholder="••••••••" required autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="adminSubmitBtn" class="btn-admin-submit">
+                    Access Incident Command Dashboard &rarr;
+                </button>
+
+                <div class="demo-divider">
+                    <span>Officer Demo Access</span>
+                </div>
+
+                <button onclick="handleDemoOfficerLogin()" type="button" class="btn-demo">
+                    ⚡ Quick Demo Officer Access (Inspector K. Raman)
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        CyberShield &copy; 2026 – Cyberbullying Incident Management System &bull; Restricted Officer Console
+    </footer>
+
+    <script>
+        async function handleAdminLogin(event) {
+            if (event) event.preventDefault();
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const submitBtn = document.getElementById('adminSubmitBtn');
+
+            if (!email || !password) {
+                showAlert('Please provide both Badge ID / Email and Security Key.', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Verifying Security Clearance...';
+
+            try {
+                const response = await fetch('/api/users/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const adminSession = {
+                        badgeId: 'CYBER-OFFICER-742',
+                        name: data.name || 'Inspector K. Raman',
+                        email: data.email || email,
+                        role: data.role || 'ADMIN',
+                        department: 'Cyber Crime Investigation Division',
+                        clearance: 'LEVEL 4 FORENSIC ACCESS',
+                        loginTime: new Date().toISOString()
+                    };
+
+                    localStorage.setItem('cyberShield_admin', JSON.stringify(adminSession));
+                    showAlert('Authentication verified. Loading command console...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/dashboard';
+                    }, 500);
+                } else {
+                    showAlert(data.error || 'Invalid officer credentials or access key.', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = 'Access Incident Command Dashboard \u2192';
+                }
+            } catch (err) {
+                showAlert('Network communication error: ' + err.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerText = 'Access Incident Command Dashboard \u2192';
+            }
+        }
+
+        async function handleDemoOfficerLogin() {
+            document.getElementById('adminEmail').value = 'admin@cybershield.gov';
+            document.getElementById('adminPassword').value = 'admin123';
+            await handleAdminLogin(null);
+        }
+
+        function showAlert(msg, type) {
+            const alert = document.getElementById('adminLoginAlert');
+            alert.className = type === 'error' ? 'alert-box alert-error' : 'alert-box alert-success';
+            alert.innerText = msg;
+            alert.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

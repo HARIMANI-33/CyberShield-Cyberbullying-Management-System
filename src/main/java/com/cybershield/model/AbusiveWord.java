@@ -21,6 +21,8 @@ public class AbusiveWord {
 
     private Integer score;
 
+    private String recommendedAction;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -28,11 +30,16 @@ public class AbusiveWord {
     }
 
     public AbusiveWord(String keyword, String language, String category, String severity, Integer score, Boolean active) {
+        this(keyword, language, category, severity, score, null, active);
+    }
+
+    public AbusiveWord(String keyword, String language, String category, String severity, Integer score, String recommendedAction, Boolean active) {
         this.keyword = keyword;
         this.language = language;
         this.category = category;
         this.severity = severity;
         this.score = score;
+        this.recommendedAction = recommendedAction;
         this.active = (active != null) ? active : true;
     }
 
@@ -89,6 +96,14 @@ public class AbusiveWord {
 
     public void setScore(Integer score) {
         this.score = score;
+    }
+
+    public String getRecommendedAction() {
+        return recommendedAction;
+    }
+
+    public void setRecommendedAction(String recommendedAction) {
+        this.recommendedAction = recommendedAction;
     }
 
     public Boolean getActive() {

@@ -10,12 +10,20 @@ public class ComplaintResponse {
     private String priority;
     private String status;
     private String assessmentNote;
+    private String detectedCategory;
+    private String matchedTerms;
 
     public ComplaintResponse() {
     }
 
     public ComplaintResponse(Long id, String complaintNumber, String message, String detectedSeverity,
                              Integer riskScore, String priority, String status, String assessmentNote) {
+        this(id, complaintNumber, message, detectedSeverity, riskScore, priority, status, assessmentNote, null, null);
+    }
+
+    public ComplaintResponse(Long id, String complaintNumber, String message, String detectedSeverity,
+                             Integer riskScore, String priority, String status, String assessmentNote,
+                             String detectedCategory, String matchedTerms) {
         this.id = id;
         this.complaintNumber = complaintNumber;
         this.message = message;
@@ -24,6 +32,8 @@ public class ComplaintResponse {
         this.priority = priority;
         this.status = status;
         this.assessmentNote = assessmentNote;
+        this.detectedCategory = detectedCategory;
+        this.matchedTerms = matchedTerms;
     }
 
     public ComplaintResponse(Long id, String complaintNumber, String message, String detectedSeverity,
@@ -98,5 +108,21 @@ public class ComplaintResponse {
 
     public void setAssessmentNote(String assessmentNote) {
         this.assessmentNote = assessmentNote;
+    }
+
+    public String getDetectedCategory() {
+        return detectedCategory;
+    }
+
+    public void setDetectedCategory(String detectedCategory) {
+        this.detectedCategory = detectedCategory;
+    }
+
+    public String getMatchedTerms() {
+        return matchedTerms;
+    }
+
+    public void setMatchedTerms(String matchedTerms) {
+        this.matchedTerms = matchedTerms;
     }
 }

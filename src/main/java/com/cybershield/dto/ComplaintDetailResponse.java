@@ -253,4 +253,32 @@ public class ComplaintDetailResponse {
     public void setPreliminaryAnalysis(PreliminaryAnalysisInfo preliminaryAnalysis) {
         this.preliminaryAnalysis = preliminaryAnalysis;
     }
+
+    private Long userId;
+    private LocalDateTime incidentDateTime;
+    private String adminRemarks;
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
+    }
+
+    public LocalDateTime getIncidentDateTime() {
+        return incidentDateTime;
+    }
+
+    public void setIncidentDateTime(LocalDateTime incidentDateTime) {
+        this.incidentDateTime = incidentDateTime;
+    }
+
+    public String getAdminRemarks() {
+        return adminRemarks;
+    }
+
+    public void setAdminRemarks(String adminRemarks) {
+        this.adminRemarks = adminRemarks;
+    }
 }
