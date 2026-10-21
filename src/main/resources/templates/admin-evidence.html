@@ -82,56 +82,42 @@
     </footer>
 
     <script>
-        let allEvidenceItems = [];
+        let allComplaintsData = [];
 
         window.addEventListener('DOMContentLoaded', () => {
             loadEvidenceQueue();
         });
 
         async function loadEvidenceQueue() {
-            const container = document.getElementById('evidenceQueueContainer');
             try {
                 const res = await fetch('/api/complaints');
                 if (!res.ok) throw new Error('Failed to load complaints');
-                const complaints = await res.json();
+                allComplaintsData = await res.json();
 
-                allEvidenceItems = [];
-                complaints.forEach(c => {
-                    if (c.evidence && c.evidence.length > 0) {
-                        c.evidence.forEach(ev => {
-                            allEvidenceItems.push({
-                                ...ev,
-                                complaintId: c.id,
-                                complaintNumber: c.complaintNumber || `CS-${c.id}`,
-                                complaintTitle: c.title,
-                                complainantName: c.userName,
-                                platform: c.platform,
-                                threatLevel: c.detectedSeverity || c.threatLevel,
-                                currentRemarks: c.adminRemarks || ''
-                            });
-                        });
-                    }
-                });
-
-                updateEvidenceStats(allEvidenceItems);
-                renderEvidenceQueue(allEvidenceItems);
+                updateEvidenceStats(allComplaintsData);
+                renderEvidenceQueue(allComplaintsData);
             } catch (err) {
                 console.error(err);
                 showAlert('Error loading evidence: ' + err.message, 'error');
             }
         }
 
-        function updateEvidenceStats(list) {
-            let total = list.length;
+        function updateEvidenceStats(complaints) {
+            let total = 0;
             let pending = 0;
             let verified = 0;
             let rejected = 0;
 
-            list.forEach(ev => {
-                const st = (ev.verificationStatus || 'PENDING').toUpperCase();
-                if (st === 'PENDING') pending++;
-                else if (st === 'VERIFIED') verified++;
-                else if (st === 'REJECTED') rejected++;
+            complaints.forEach(c => {
+                if (c.evidence && c.evidence.length > 0) {
+                    c.evidence.forEach(ev => {
+                        total++;
+                        const st = (ev.verificationStatus || 'PENDING').toUpperCase();
+                        if (st === 'PENDING') pending++;
+                        else if (st === 'VERIFIED') verified++;
+                        else if (st === 'REJECTED') rejected++;
+                    });
+                }
             });
 
             document.getElementById('statEvTotal').innerText = total;
@@ -140,9 +126,11 @@
             document.getElementById('statEvRejected').innerText = rejected;
         }
 
-        function renderEvidenceQueue(list) {
+        function renderEvidenceQueue(complaints) {
             const container = document.getElementById('evidenceQueueContainer');
-            if (!list || list.length === 0) {
+            const complaintsWithEvidence = (complaints || []).filter(c => c.evidence && c.evidence.length > 0);
+
+            if (!complaintsWithEvidence || complaintsWithEvidence.length === 0) {
                 container.innerHTML = `
                     <div class="card" style="text-align: center; padding: 3.5rem 1.5rem;">
                         <div style="font-size: 3rem; margin-bottom: 0.75rem;">📁</div>
@@ -155,84 +143,153 @@
                 return;
             }
 
-            let html = '<div style="display: flex; flex-direction: column; gap: 1.5rem;">';
-            list.forEach(ev => {
-                const st = (ev.verificationStatus || 'PENDING').toUpperCase();
-                let statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);">PENDING REVIEW</span>';
-                if (st === 'VERIFIED') {
-                    statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">VERIFIED AUTHENTIC</span>';
-                } else if (st === 'REJECTED') {
-                    statusBadge = '<span class="badge badge-critical">REJECTED / UNVERIFIED</span>';
-                }
+            let html = '<div style="display: flex; flex-direction: column; gap: 2rem;">';
+            complaintsWithEvidence.forEach(c => {
+                const sevBadge = getSeverityBadge(c.detectedSeverity || c.threatLevel);
+                const caseNum = c.complaintNumber || `CS-${c.id}`;
+                const dateStr = c.createdAt ? new Date(c.createdAt).toLocaleString() : 'Recent';
+                const postUrl = c.postUrl ? c.postUrl.trim() : '';
 
-                const isImage = (ev.fileName && (ev.fileName.endsWith('.png') || ev.fileName.endsWith('.jpg') || ev.fileName.endsWith('.jpeg')));
-                const previewSrc = ev.filePath || `/uploads/${ev.fileName}`;
+                // Build screenshots gallery for this complaint
+                let screenshotsHtml = '<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem; margin-top: 1rem;">';
+                c.evidence.forEach(ev => {
+                    const st = (ev.verificationStatus || 'PENDING').toUpperCase();
+                    let statusBadge = '<span class="badge" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); font-size: 0.72rem;">PENDING</span>';
+                    if (st === 'VERIFIED') {
+                        statusBadge = '<span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 0.72rem;">VERIFIED</span>';
+                    } else if (st === 'REJECTED') {
+                        statusBadge = '<span class="badge badge-critical" style="font-size: 0.72rem;">REJECTED</span>';
+                    }
 
-                html += `
-                    <div class="card" style="display: grid; grid-template-columns: 260px 1fr; gap: 1.5rem; align-items: start;">
-                        <!-- Evidence Media Preview -->
-                        <div style="background: rgba(0,0,0,0.4); border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 0.75rem; text-align: center;">
-                            ${isImage ? `
-                                <img src="${previewSrc}" alt="Evidence Preview" style="max-width: 100%; max-height: 180px; border-radius: 6px; object-fit: contain; margin-bottom: 0.5rem;" onerror="this.src='/css/placeholder.png'; this.style.display='none';">
-                            ` : `
-                                <div style="font-size: 3rem; margin: 1rem 0;">📄</div>
-                            `}
-                            <div style="font-family: monospace; font-size: 0.82rem; color: #38bdf8; word-break: break-all;">
-                                ${escapeHtml(ev.fileName || 'evidence_file')}
-                            </div>
-                            <div style="margin-top: 0.5rem;">
-                                <a href="${previewSrc}" target="_blank" class="btn btn-secondary btn-sm" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">
-                                    View Full Size &nearr;
-                                </a>
-                            </div>
-                        </div>
+                    const isImage = !ev.fileName || /\.(png|jpe?g|webp|gif)$/i.test(ev.fileName);
+                    const previewSrc = ev.filePath ? ('/' + ev.filePath.replace(/^\/+/, '').replace(/\\/g, '/')) : `/uploads/${ev.fileName}`;
 
-                        <!-- Metadata & Verification Controls -->
-                        <div>
-                            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-                                <div>
-                                    <span style="font-family: monospace; font-weight: 700; color: #38bdf8; font-size: 1.05rem;">
-                                        Case ${escapeHtml(ev.complaintNumber)}
-                                    </span>
-                                    <h3 style="color: #fff; font-size: 1.15rem; margin-top: 0.2rem;">
-                                        ${escapeHtml(ev.complaintTitle || 'Incident Report')}
-                                    </h3>
+                    screenshotsHtml += `
+                        <div style="background: rgba(10, 15, 29, 0.65); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.85rem; display: flex; flex-direction: column; justify-content: space-between;">
+                            <div>
+                                <div style="text-align: center; background: rgba(0,0,0,0.4); border-radius: 6px; padding: 0.5rem; margin-bottom: 0.65rem;">
+                                    ${isImage ? `
+                                        <a href="${previewSrc}" target="_blank" rel="noopener noreferrer">
+                                            <img src="${previewSrc}" alt="Evidence Preview" style="max-width: 100%; max-height: 160px; object-fit: contain; border-radius: 4px; cursor: pointer;" onerror="this.onerror=null; this.src='/css/placeholder.png';">
+                                        </a>
+                                    ` : `
+                                        <div style="font-size: 2.5rem; margin: 0.5rem 0;">📄</div>
+                                    `}
                                 </div>
-                                <div>
+                                <div style="font-family: monospace; font-size: 0.78rem; color: #38bdf8; word-break: break-all; margin-bottom: 0.5rem;">
+                                    📸 ${escapeHtml(ev.fileName || 'screenshot')}
+                                </div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem;">
+                                    <a href="${previewSrc}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="font-size: 0.72rem; padding: 0.2rem 0.55rem;">
+                                        🔍 Full Size &nearr;
+                                    </a>
                                     ${statusBadge}
                                 </div>
                             </div>
 
-                            <div style="display: flex; gap: 1rem; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; flex-wrap: wrap;">
-                                <span>Complainant: <strong style="color: #fff;">${escapeHtml(ev.complainantName || 'Anonymous')}</strong></span>
-                                <span>Platform: <strong style="color: #fff;">${escapeHtml(ev.platform || 'Online')}</strong></span>
-                                <span>Threat: <strong style="color: #f87171;">${escapeHtml(ev.threatLevel || 'LOW')}</strong></span>
+                            <div>
+                                <div class="form-group" style="margin-bottom: 0.5rem;">
+                                    <input type="text" id="evRemarksInput_${ev.id}" class="form-control" style="font-size: 0.78rem; padding: 0.35rem 0.6rem;" 
+                                           placeholder="Forensic notes..." value="${escapeHtml(ev.remarks || '')}">
+                                </div>
+                                <div style="display: flex; gap: 0.35rem;">
+                                    <button onclick="verifyEvidence(${ev.id}, 'VERIFIED')" class="btn btn-primary btn-sm" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem; background: #059669; border-color: #059669;">
+                                        ✅ Verify
+                                    </button>
+                                    <button onclick="verifyEvidence(${ev.id}, 'REJECTED')" class="btn btn-secondary btn-sm" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.75rem; color: #f87171; border-color: rgba(248, 113, 113, 0.4);">
+                                        ❌ Reject
+                                    </button>
+                                </div>
                             </div>
+                        </div>
+                    `;
+                });
+                screenshotsHtml += '</div>';
 
-                            <div class="form-group" style="margin-bottom: 1rem;">
-                                <label class="form-label" style="font-size: 0.82rem;">Forensic Analysis Remarks &amp; Timestamp Notes</label>
-                                <input type="text" id="evRemarksInput_${ev.id}" class="form-control" style="font-size: 0.9rem; padding: 0.5rem 0.85rem;" 
-                                       placeholder="Enter verification notes (e.g. Screenshot metadata matches reported timestamp)" 
-                                       value="${escapeHtml(ev.currentRemarks || '')}">
+                html += `
+                    <div class="card" style="border: 1px solid rgba(56, 189, 248, 0.25); box-shadow: 0 8px 24px rgba(0,0,0,0.35);">
+                        <!-- Complaint Header Details -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 0.75rem;">
+                            <div>
+                                <span style="font-family: monospace; font-weight: 800; color: #38bdf8; font-size: 1.15rem;">
+                                    Case ${escapeHtml(caseNum)}
+                                </span>
+                                <h2 style="color: #fff; font-size: 1.3rem; margin-top: 0.25rem;">
+                                    ${escapeHtml(c.title || 'Incident Report')}
+                                </h2>
                             </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                ${sevBadge}
+                                <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4);">
+                                    📸 ${c.evidence.length} Screenshot(s)
+                                </span>
+                            </div>
+                        </div>
 
-                            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                                <button onclick="verifyEvidence(${ev.id}, 'VERIFIED')" class="btn btn-primary btn-sm" style="padding: 0.45rem 1rem; background: #059669; border-color: #059669;">
-                                    ✅ Verify Authenticity
-                                </button>
-                                <button onclick="verifyEvidence(${ev.id}, 'REJECTED')" class="btn btn-secondary btn-sm" style="padding: 0.45rem 1rem; color: #f87171; border-color: rgba(248, 113, 113, 0.4);">
-                                    ❌ Reject Evidence
-                                </button>
-                                <a href="/admin/complaints" class="btn btn-secondary btn-sm" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; margin-left: auto;">
-                                    View Full Case &rarr;
+                        <!-- Submitter and Platform Meta -->
+                        <div style="display: flex; gap: 1.5rem; font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1rem; flex-wrap: wrap;">
+                            <span>Complainant: <strong style="color: #fff;">${escapeHtml(c.userName || 'Anonymous')}</strong></span>
+                            <span>Platform: <strong style="color: #fff;">${escapeHtml(c.platform || 'Online')}</strong></span>
+                            <span>Filed: <strong style="color: #cbd5e1;">${dateStr}</strong></span>
+                        </div>
+
+                        <!-- Incident Narrative Description -->
+                        <div style="margin-bottom: 1.25rem;">
+                            <label class="form-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8;">
+                                Reported Incident Narrative / Harassment Content
+                            </label>
+                            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--border-color); border-radius: 6px; padding: 0.75rem 1rem; color: #cbd5e1; font-size: 0.92rem; line-height: 1.5; white-space: pre-wrap;">
+                                ${escapeHtml(c.description || 'No description provided.')}
+                            </div>
+                        </div>
+
+                        <!-- Feature 2 & 4: Original Social Media Post URL Section -->
+                        <div style="background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 8px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+                            <div style="min-width: 220px; flex: 1;">
+                                <span style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700; display: block; margin-bottom: 0.25rem;">
+                                    🌐 Original Social Media Post URL
+                                </span>
+                                <div style="font-family: monospace; font-size: 0.88rem; color: #38bdf8; word-break: break-all;">
+                                    ${postUrl ? escapeHtml(postUrl) : '<span style="color: var(--text-muted);">No Post URL specified</span>'}
+                                </div>
+                            </div>
+                            ${postUrl ? `
+                                <a href="${escapeHtml(postUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.45rem 0.95rem; font-size: 0.85rem;">
+                                    🔗 Open Original Post &nearr;
                                 </a>
+                            ` : ''}
+                        </div>
+
+                        <!-- Feature 1 & 4: All Evidence Screenshots -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                                <label class="form-label" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin: 0;">
+                                    Attached Evidence Screenshots (${c.evidence.length})
+                                </label>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">Click any thumbnail or "Full Size" to inspect</span>
                             </div>
+                            ${screenshotsHtml}
+                        </div>
+
+                        <!-- Action Bar -->
+                        <div style="margin-top: 1.25rem; padding-top: 0.85rem; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: flex-end; gap: 0.75rem;">
+                            <a href="/admin/complaints" class="btn btn-secondary btn-sm" style="font-size: 0.82rem; padding: 0.4rem 0.9rem;">
+                                📋 View Case in Complaints Manager &rarr;
+                            </a>
                         </div>
                     </div>
                 `;
             });
             html += '</div>';
             container.innerHTML = html;
+        }
+
+        function getSeverityBadge(sev) {
+            const s = (sev || 'LOW').toUpperCase();
+            if (s === 'CRITICAL') return '<span class="badge badge-critical">CRITICAL</span>';
+            if (s === 'HIGH') return '<span class="badge badge-high">HIGH</span>';
+            if (s === 'MEDIUM') return '<span class="badge badge-medium">MEDIUM</span>';
+            return '<span class="badge badge-low">LOW</span>';
         }
 
         async function verifyEvidence(id, status) {

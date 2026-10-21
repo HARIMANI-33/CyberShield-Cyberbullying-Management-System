@@ -14,6 +14,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -33,26 +35,29 @@ public class EvidenceService {
         this.notificationService = notificationService;
     }
 
-    @Transactional
-    public EvidenceResponse uploadEvidence(Long complaintId, MultipartFile file) throws IOException {
+    public static void validateScreenshotFile(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("File must not be empty");
         }
-
-        String originalFilename = file.getOriginalFilename();
-        String filenameLower = (originalFilename != null) ? originalFilename.toLowerCase() : "";
-
-        if (!(filenameLower.endsWith(".png") || filenameLower.endsWith(".jpg") || filenameLower.endsWith(".jpeg"))) {
-            throw new IllegalArgumentException("Invalid file format. Only PNG, JPG, and JPEG files are allowed.");
+        if (file.getSize() > 10 * 1024 * 1024) {
+            throw new IllegalArgumentException("File " + (file.getOriginalFilename() != null ? file.getOriginalFilename() : "") + " exceeds the 10MB limit");
         }
+        String originalFilename = file.getOriginalFilename();
+        String filenameLower = (originalFilename != null) ? originalFilename.toLowerCase().trim() : "";
+        if (!(filenameLower.endsWith(".png") || filenameLower.endsWith(".jpg") || filenameLower.endsWith(".jpeg") || filenameLower.endsWith(".webp"))) {
+            throw new IllegalArgumentException("Invalid file format. Only PNG, JPG, JPEG, and WebP files are allowed.");
+        }
+    }
 
-        Complaint complaint = complaintRepository.findById(complaintId)
-                .orElseThrow(() -> new IllegalArgumentException("Complaint not found with ID: " + complaintId));
+    @Transactional
+    public Evidence saveEvidenceForComplaint(Complaint complaint, MultipartFile file) throws IOException {
+        validateScreenshotFile(file);
 
         if (!Files.exists(UPLOAD_PATH)) {
             Files.createDirectories(UPLOAD_PATH);
         }
 
+        String originalFilename = file.getOriginalFilename() != null ? file.getOriginalFilename() : "screenshot.png";
         String savedFilename = UUID.randomUUID().toString() + "_" + originalFilename;
         Path targetLocation = UPLOAD_PATH.resolve(savedFilename);
         Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
@@ -60,28 +65,98 @@ public class EvidenceService {
         Evidence evidence = new Evidence();
         evidence.setComplaint(complaint);
         evidence.setFileName(originalFilename);
-        evidence.setFilePath(targetLocation.toString());
+        evidence.setFilePath("/uploads/evidence/" + savedFilename);
         evidence.setVerificationStatus("PENDING");
 
-        Evidence saved = evidenceRepository.save(evidence);
+        return evidenceRepository.save(evidence);
+    }
+
+    @Transactional
+    public EvidenceResponse uploadEvidence(Long complaintId, MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("File must not be empty");
+        }
+
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new IllegalArgumentException("Complaint not found with ID: " + complaintId));
+
+        Evidence saved = saveEvidenceForComplaint(complaint, file);
 
         if (complaint.getUser() != null) {
             notificationService.notifyUser(
                     complaint.getUser(),
                     "Evidence Received: " + complaint.getComplaintNumber(),
-                    "Screenshot proof \"" + originalFilename + "\" has been attached and logged for officer review.",
+                    "Screenshot proof \"" + saved.getFileName() + "\" has been attached and logged for officer review.",
                     "EVIDENCE_VERIFIED",
                     complaint.getComplaintNumber()
             );
         }
 
-        return new EvidenceResponse(
+        EvidenceResponse response = new EvidenceResponse(
                 saved.getId(),
                 "Evidence uploaded successfully",
                 saved.getFileName(),
                 saved.getVerificationStatus(),
                 saved.getUploadedAt()
         );
+        response.setFilePath(saved.getFilePath());
+        return response;
+    }
+
+    @Transactional
+    public List<EvidenceResponse> uploadMultipleEvidence(Long complaintId, java.util.List<MultipartFile> files) throws IOException {
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("At least one screenshot evidence file is required");
+        }
+
+        Complaint complaint = complaintRepository.findById(complaintId)
+                .orElseThrow(() -> new IllegalArgumentException("Complaint not found with ID: " + complaintId));
+
+        long totalSize = 0;
+        int validFileCount = 0;
+        for (MultipartFile f : files) {
+            if (f != null && !f.isEmpty()) {
+                validateScreenshotFile(f);
+                totalSize += f.getSize();
+                validFileCount++;
+            }
+        }
+
+        if (validFileCount == 0) {
+            throw new IllegalArgumentException("At least one screenshot evidence file is required");
+        }
+
+        if (totalSize > 50 * 1024 * 1024) {
+            throw new IllegalArgumentException("Total upload size exceeds the 50MB limit");
+        }
+
+        java.util.List<EvidenceResponse> responses = new java.util.ArrayList<>();
+        for (MultipartFile f : files) {
+            if (f != null && !f.isEmpty()) {
+                Evidence saved = saveEvidenceForComplaint(complaint, f);
+                EvidenceResponse resp = new EvidenceResponse(
+                        saved.getId(),
+                        "Evidence uploaded successfully",
+                        saved.getFileName(),
+                        saved.getVerificationStatus(),
+                        saved.getUploadedAt()
+                );
+                resp.setFilePath(saved.getFilePath());
+                responses.add(resp);
+            }
+        }
+
+        if (complaint.getUser() != null) {
+            notificationService.notifyUser(
+                    complaint.getUser(),
+                    "Evidence Received: " + complaint.getComplaintNumber(),
+                    responses.size() + " screenshot proof(s) attached and logged for officer review.",
+                    "EVIDENCE_VERIFIED",
+                    complaint.getComplaintNumber()
+            );
+        }
+
+        return responses;
     }
 
     @Transactional

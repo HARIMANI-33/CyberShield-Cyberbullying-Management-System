@@ -96,6 +96,94 @@ class ComplaintControllerTest {
     }
 
     @Test
+    void testCreateComplaintMultipartWithMultipleScreenshotsAndPostUrl() throws Exception {
+        MockMultipartFile file1 = new MockMultipartFile(
+                "files",
+                "shot1.png",
+                MediaType.IMAGE_PNG_VALUE,
+                "img-1".getBytes()
+        );
+        MockMultipartFile file2 = new MockMultipartFile(
+                "files",
+                "shot2.jpg",
+                MediaType.IMAGE_JPEG_VALUE,
+                "img-2".getBytes()
+        );
+
+        ComplaintResponse response = new ComplaintResponse(
+                "CS-20002",
+                "Complaint and 2 evidence screenshot(s) registered successfully",
+                "HIGH",
+                8,
+                "IMMEDIATE_ATTENTION",
+                "Preliminary automated assessment",
+                "https://www.instagram.com/p/C-abc12345/"
+        );
+
+        when(complaintService.registerComplaintWithEvidence(any(CreateComplaintRequest.class), any())).thenReturn(response);
+
+        mockMvc.perform(multipart("/api/complaints")
+                        .file(file1)
+                        .file(file2)
+                        .param("userId", "1")
+                        .param("title", "Targeted harassment campaign")
+                        .param("category", "Targeted Harassment")
+                        .param("platform", "Instagram")
+                        .param("description", "Violent threats posted repeatedly on my profile.")
+                        .param("postUrl", "https://www.instagram.com/p/C-abc12345/"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.complaintNumber").value("CS-20002"))
+                .andExpect(jsonPath("$.postUrl").value("https://www.instagram.com/p/C-abc12345/"))
+                .andExpect(jsonPath("$.detectedSeverity").value("HIGH"));
+    }
+
+    @Test
+    void testCreateComplaintMultipartRejectsMissingFields() throws Exception {
+        when(complaintService.registerComplaintWithEvidence(any(), any()))
+                .thenThrow(new IllegalArgumentException("Post URL is mandatory and must be a valid HTTP or HTTPS address"));
+
+        mockMvc.perform(multipart("/api/complaints")
+                        .param("userId", "1")
+                        .param("title", "Title")
+                        .param("category", "Harassment")
+                        .param("platform", "Instagram")
+                        .param("description", "Some description")
+                        .param("postUrl", "invalid-url"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("Post URL is mandatory and must be a valid HTTP or HTTPS address"));
+    }
+
+    @Test
+    void testUploadMultipleEvidenceEndpoint() throws Exception {
+        MockMultipartFile file1 = new MockMultipartFile("files", "img1.png", MediaType.IMAGE_PNG_VALUE, "a".getBytes());
+        MockMultipartFile file2 = new MockMultipartFile("files", "img2.png", MediaType.IMAGE_PNG_VALUE, "b".getBytes());
+
+        EvidenceResponse item1 = new EvidenceResponse(
+                1L,
+                "Evidence uploaded successfully",
+                "img1.png",
+                "PENDING",
+                LocalDateTime.now()
+        );
+        EvidenceResponse item2 = new EvidenceResponse(
+                2L,
+                "Evidence uploaded successfully",
+                "img2.png",
+                "PENDING",
+                LocalDateTime.now()
+        );
+
+        when(evidenceService.uploadMultipleEvidence(eq(1L), any())).thenReturn(List.of(item1, item2));
+
+        mockMvc.perform(multipart("/api/complaints/1/evidence")
+                        .file(file1)
+                        .file(file2))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.count").value(2))
+                .andExpect(jsonPath("$.message").value("Evidence uploaded successfully"));
+    }
+
+    @Test
     void testGetComplaintById() throws Exception {
         ComplaintDetailResponse response = new ComplaintDetailResponse();
         response.setId(1L);

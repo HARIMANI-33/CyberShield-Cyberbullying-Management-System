@@ -12,6 +12,7 @@ public class ComplaintResponse {
     private String assessmentNote;
     private String detectedCategory;
     private String matchedTerms;
+    private String postUrl;
 
     public ComplaintResponse() {
     }
@@ -44,6 +45,12 @@ public class ComplaintResponse {
     public ComplaintResponse(String complaintNumber, String message, String detectedSeverity,
                              Integer riskScore, String priority, String assessmentNote) {
         this(null, complaintNumber, message, detectedSeverity, riskScore, priority, "SUBMITTED", assessmentNote);
+    }
+
+    public ComplaintResponse(String complaintNumber, String message, String detectedSeverity,
+                             Integer riskScore, String priority, String assessmentNote, String postUrl) {
+        this(null, complaintNumber, message, detectedSeverity, riskScore, priority, "SUBMITTED", assessmentNote);
+        this.postUrl = postUrl;
     }
 
     public Long getId() {
@@ -124,5 +131,13 @@ public class ComplaintResponse {
 
     public void setMatchedTerms(String matchedTerms) {
         this.matchedTerms = matchedTerms;
+    }
+
+    public String getPostUrl() {
+        return postUrl;
+    }
+
+    public void setPostUrl(String postUrl) {
+        this.postUrl = postUrl;
     }
 }

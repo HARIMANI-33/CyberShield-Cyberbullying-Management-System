@@ -7,16 +7,22 @@ public class CreateComplaintRequest {
     private String category;
     private String platform;
     private String description;
+    private String postUrl;
 
     public CreateComplaintRequest() {
     }
 
     public CreateComplaintRequest(Long userId, String title, String category, String platform, String description) {
+        this(userId, title, category, platform, description, null);
+    }
+
+    public CreateComplaintRequest(Long userId, String title, String category, String platform, String description, String postUrl) {
         this.userId = userId;
         this.title = title;
         this.category = category;
         this.platform = platform;
         this.description = description;
+        this.postUrl = postUrl;
     }
 
     public Long getUserId() {
@@ -57,6 +63,14 @@ public class CreateComplaintRequest {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getPostUrl() {
+        return postUrl;
+    }
+
+    public void setPostUrl(String postUrl) {
+        this.postUrl = postUrl;
     }
 
     private java.time.LocalDateTime incidentDateTime;

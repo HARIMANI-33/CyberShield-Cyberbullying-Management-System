@@ -45,6 +45,9 @@ public class Complaint {
     @Column(columnDefinition = "TEXT")
     private String adminRemarks;
 
+    @Column(name = "post_url", length = 1024)
+    private String postUrl;
+
     public Complaint() {
     }
 
@@ -176,5 +179,13 @@ public class Complaint {
 
     public void setAdminRemarks(String adminRemarks) {
         this.adminRemarks = adminRemarks;
+    }
+
+    public String getPostUrl() {
+        return postUrl;
+    }
+
+    public void setPostUrl(String postUrl) {
+        this.postUrl = postUrl;
     }
 }

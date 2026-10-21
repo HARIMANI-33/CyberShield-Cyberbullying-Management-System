@@ -1,14 +1,18 @@
 package com.cybershield.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class EvidenceResponse {
 
     private Long id;
     private String message;
     private String fileName;
+    private String filePath;
     private String verificationStatus;
     private LocalDateTime uploadedAt;
+    private List<EvidenceResponse> items;
+    private Integer count;
 
     public EvidenceResponse() {
     }
@@ -65,5 +69,29 @@ public class EvidenceResponse {
 
     public void setUploadedAt(LocalDateTime uploadedAt) {
         this.uploadedAt = uploadedAt;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public List<EvidenceResponse> getItems() {
+        return items;
+    }
+
+    public void setItems(List<EvidenceResponse> items) {
+        this.items = items;
+    }
+
+    public Integer getCount() {
+        return count;
+    }
+
+    public void setCount(Integer count) {
+        this.count = count;
     }
 }

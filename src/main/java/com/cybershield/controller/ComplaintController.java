@@ -27,7 +27,7 @@ public class ComplaintController {
         this.evidenceService = evidenceService;
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> createComplaint(@RequestBody CreateComplaintRequest request, HttpSession session) {
         try {
             // Auto-detect logged-in user if not provided in payload
@@ -49,16 +49,85 @@ public class ComplaintController {
         }
     }
 
-    @PostMapping(value = "/{complaintId}/evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadEvidence(@PathVariable Long complaintId,
-                                            @RequestParam("file") MultipartFile file) {
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createComplaintMultipart(
+            @RequestParam(value = "title", required = false) String title,
+            @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "platform", required = false) String platform,
+            @RequestParam(value = "description", required = false) String description,
+            @RequestParam(value = "postUrl", required = false) String postUrl,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "files", required = false) List<MultipartFile> files,
+            @RequestParam(value = "file", required = false) List<MultipartFile> fileList,
+            HttpSession session) {
         try {
-            EvidenceResponse response = evidenceService.uploadEvidence(complaintId, file);
+            if (userId == null && session != null) {
+                Long sessionUserId = (Long) session.getAttribute(UserController.SESSION_USER_ID);
+                if (sessionUserId != null) {
+                    userId = sessionUserId;
+                }
+            }
+            if (userId == null) {
+                userId = 1L;
+            }
+
+            java.util.List<MultipartFile> allFiles = new java.util.ArrayList<>();
+            if (files != null) allFiles.addAll(files);
+            if (fileList != null) allFiles.addAll(fileList);
+
+            CreateComplaintRequest request = new CreateComplaintRequest(userId, title, category, platform, description, postUrl);
+            ComplaintResponse response = complaintService.registerComplaintWithEvidence(request, allFiles);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
         } catch (IOException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "File upload failed: " + ex.getMessage()));
+        }
+    }
+
+    @PostMapping(value = "/{complaintId}/evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> uploadEvidence(@PathVariable Long complaintId,
+                                            @RequestParam(value = "file", required = false) List<MultipartFile> file,
+                                            @RequestParam(value = "files", required = false) List<MultipartFile> files) {
+        try {
+            java.util.List<MultipartFile> allFiles = new java.util.ArrayList<>();
+            if (file != null) allFiles.addAll(file);
+            if (files != null) allFiles.addAll(files);
+
+            if (allFiles.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "File must not be empty"));
+            }
+
+            if (allFiles.size() == 1) {
+                EvidenceResponse response = evidenceService.uploadEvidence(complaintId, allFiles.get(0));
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            } else {
+                List<EvidenceResponse> responseList = evidenceService.uploadMultipleEvidence(complaintId, allFiles);
+                EvidenceResponse response = new EvidenceResponse(
+                        responseList.get(0).getId(),
+                        "Evidence uploaded successfully",
+                        responseList.get(0).getFileName(),
+                        responseList.get(0).getVerificationStatus(),
+                        responseList.get(0).getUploadedAt()
+                );
+                response.setItems(responseList);
+                response.setCount(responseList.size());
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            }
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", ex.getMessage()));
+        } catch (IOException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "File upload failed: " + ex.getMessage()));
+        }
+    }
+
+    @GetMapping("/{complaintId}/evidence")
+    public ResponseEntity<?> getComplaintEvidence(@PathVariable Long complaintId) {
+        try {
+            ComplaintDetailResponse details = complaintService.getComplaintDetails(complaintId);
+            return ResponseEntity.ok(details.getEvidence());
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
         }
     }
 

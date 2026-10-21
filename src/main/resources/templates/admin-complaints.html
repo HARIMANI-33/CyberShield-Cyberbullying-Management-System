@@ -214,6 +214,16 @@
                         <p id="dtlDescription" style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 6px;"></p>
                     </div>
 
+                    <div id="dtlPostUrlSection" style="margin-bottom: 1.25rem; display: none;">
+                        <span class="profile-field-label">Original Social Media Post URL</span>
+                        <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.35rem; flex-wrap: wrap; background: rgba(14, 165, 233, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 0.65rem 0.85rem;">
+                            <span id="dtlPostUrlText" style="font-family: monospace; font-size: 0.88rem; color: #38bdf8; word-break: break-all; flex: 1;"></span>
+                            <a id="dtlPostUrlLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-sm" style="padding: 0.3rem 0.75rem; font-size: 0.82rem; white-space: nowrap;">
+                                🔗 Open Original Post &nearr;
+                            </a>
+                        </div>
+                    </div>
+
                     <div id="dtlEvidenceSection" style="margin-bottom: 1rem;">
                         <span class="profile-field-label">Digital Evidence Attached</span>
                         <div id="dtlEvidenceList" style="margin-top: 0.5rem;"></div>
@@ -462,6 +472,15 @@
                 document.getElementById('dtlPriority').innerText = c.priority || 'NORMAL_REVIEW';
                 document.getElementById('dtlPriority').style.color = c.priority === 'IMMEDIATE_ATTENTION' ? '#ef4444' : '#38bdf8';
                 document.getElementById('dtlDescription').innerText = c.description || 'No description';
+
+                const postUrlSec = document.getElementById('dtlPostUrlSection');
+                if (c.postUrl && c.postUrl.trim()) {
+                    postUrlSec.style.display = 'block';
+                    document.getElementById('dtlPostUrlText').innerText = c.postUrl.trim();
+                    document.getElementById('dtlPostUrlLink').href = c.postUrl.trim();
+                } else {
+                    postUrlSec.style.display = 'none';
+                }
 
                 // Status and quick action buttons inside modal
                 document.getElementById('dtlStatusBadge').innerHTML = getStatusBadge(c.status);

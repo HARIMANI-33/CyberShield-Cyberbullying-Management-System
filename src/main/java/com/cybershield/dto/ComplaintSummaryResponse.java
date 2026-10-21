@@ -1,6 +1,7 @@
 package com.cybershield.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class ComplaintSummaryResponse {
 
@@ -12,6 +13,10 @@ public class ComplaintSummaryResponse {
     private String priority;
     private String status;
     private LocalDateTime createdAt;
+    private String platform;
+    private String description;
+    private String postUrl;
+    private List<ComplaintDetailResponse.EvidenceItem> evidence;
 
     public ComplaintSummaryResponse() {
     }
@@ -90,5 +95,37 @@ public class ComplaintSummaryResponse {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getPlatform() {
+        return platform;
+    }
+
+    public void setPlatform(String platform) {
+        this.platform = platform;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getPostUrl() {
+        return postUrl;
+    }
+
+    public void setPostUrl(String postUrl) {
+        this.postUrl = postUrl;
+    }
+
+    public List<ComplaintDetailResponse.EvidenceItem> getEvidence() {
+        return evidence;
+    }
+
+    public void setEvidence(List<ComplaintDetailResponse.EvidenceItem> evidence) {
+        this.evidence = evidence;
     }
 }

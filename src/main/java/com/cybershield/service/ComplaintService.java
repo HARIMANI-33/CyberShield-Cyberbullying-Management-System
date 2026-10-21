@@ -15,8 +15,12 @@ import com.cybershield.repository.UserRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,25 +50,86 @@ public class ComplaintService {
     private final EvidenceRepository evidenceRepository;
     private final ComplaintAnalysisRepository complaintAnalysisRepository;
     private final NotificationService notificationService;
+    private final EvidenceService evidenceService;
 
     public ComplaintService(ComplaintRepository complaintRepository,
                             UserRepository userRepository,
                             SeverityAnalysisService severityAnalysisService,
                             EvidenceRepository evidenceRepository,
                             ComplaintAnalysisRepository complaintAnalysisRepository,
-                            NotificationService notificationService) {
+                            NotificationService notificationService,
+                            EvidenceService evidenceService) {
         this.complaintRepository = complaintRepository;
         this.userRepository = userRepository;
         this.severityAnalysisService = severityAnalysisService;
         this.evidenceRepository = evidenceRepository;
         this.complaintAnalysisRepository = complaintAnalysisRepository;
         this.notificationService = notificationService;
+        this.evidenceService = evidenceService;
+    }
+
+    public static boolean isValidHttpOrHttpsUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return false;
+        }
+        String trimmed = url.trim();
+        String lower = trimmed.toLowerCase();
+        if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+            return false;
+        }
+        try {
+            URI uri = URI.create(trimmed);
+            String scheme = uri.getScheme();
+            if (scheme == null) return false;
+            String schemeLower = scheme.toLowerCase();
+            if (!schemeLower.equals("http") && !schemeLower.equals("https")) {
+                return false;
+            }
+            if (uri.getHost() == null || uri.getHost().isBlank()) {
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public static void validateComplaintFields(String title, String category, String platform, String description, String postUrl) {
+        if (title == null || title.trim().isEmpty()) {
+            throw new IllegalArgumentException("Complaint title is required");
+        }
+        if (category == null || category.trim().isEmpty()) {
+            throw new IllegalArgumentException("Incident category is required");
+        }
+        if (platform == null || platform.trim().isEmpty()) {
+            throw new IllegalArgumentException("Platform is required");
+        }
+        if (description == null || description.trim().isEmpty()) {
+            throw new IllegalArgumentException("Complaint description is required and cannot be empty");
+        }
+        if (postUrl == null || postUrl.trim().isEmpty()) {
+            throw new IllegalArgumentException("Post URL is required");
+        }
+        if (!isValidHttpOrHttpsUrl(postUrl)) {
+            throw new IllegalArgumentException("Invalid Post URL. Must be a valid HTTP or HTTPS address");
+        }
     }
 
     @Transactional
     public ComplaintResponse registerComplaint(CreateComplaintRequest request) {
         if (request.getUserId() == null) {
             throw new IllegalArgumentException("User ID is required");
+        }
+        if (request.getTitle() != null && request.getTitle().trim().isEmpty()) {
+            throw new IllegalArgumentException("Complaint title is required");
+        }
+        if (request.getDescription() != null && request.getDescription().trim().isEmpty()) {
+            throw new IllegalArgumentException("Complaint description is required and cannot be empty");
+        }
+        if (request.getPostUrl() != null && !request.getPostUrl().trim().isEmpty()) {
+            if (!isValidHttpOrHttpsUrl(request.getPostUrl())) {
+                throw new IllegalArgumentException("Invalid Post URL. Must be a valid HTTP or HTTPS address");
+            }
         }
 
         User user = userRepository.findById(request.getUserId())
@@ -74,10 +139,13 @@ public class ComplaintService {
 
         Complaint complaint = new Complaint();
         complaint.setComplaintNumber(complaintNumber);
-        complaint.setTitle(request.getTitle() != null && !request.getTitle().isBlank() ? request.getTitle() : "Cyberbullying Report");
-        complaint.setCategory(request.getCategory() != null ? request.getCategory() : "Online Harassment");
-        complaint.setPlatform(request.getPlatform() != null ? request.getPlatform() : "Other");
-        complaint.setDescription(request.getDescription());
+        complaint.setTitle(request.getTitle() != null && !request.getTitle().isBlank() ? request.getTitle().trim() : "Cyberbullying Report");
+        complaint.setCategory(request.getCategory() != null && !request.getCategory().isBlank() ? request.getCategory().trim() : "Online Harassment");
+        complaint.setPlatform(request.getPlatform() != null && !request.getPlatform().isBlank() ? request.getPlatform().trim() : "Other");
+        complaint.setDescription(request.getDescription() != null ? request.getDescription().trim() : "");
+        if (request.getPostUrl() != null && !request.getPostUrl().trim().isEmpty()) {
+            complaint.setPostUrl(request.getPostUrl().trim());
+        }
         complaint.setIncidentDateTime(request.getIncidentDateTime());
         complaint.setUser(user);
         complaint.setStatus("PENDING");
@@ -100,7 +168,7 @@ public class ComplaintService {
                 savedComplaint.getComplaintNumber()
         );
 
-        return new ComplaintResponse(
+        ComplaintResponse response = new ComplaintResponse(
                 savedComplaint.getId(),
                 savedComplaint.getComplaintNumber(),
                 "Complaint registered successfully",
@@ -112,6 +180,89 @@ public class ComplaintService {
                 analysis.getDetectedCategory(),
                 analysis.getMatchedTerms()
         );
+        response.setPostUrl(savedComplaint.getPostUrl());
+        return response;
+    }
+
+    @Transactional
+    public ComplaintResponse registerComplaintWithEvidence(CreateComplaintRequest request, List<MultipartFile> files) throws IOException {
+        validateComplaintFields(request.getTitle(), request.getCategory(), request.getPlatform(), request.getDescription(), request.getPostUrl());
+
+        if (files == null || files.isEmpty()) {
+            throw new IllegalArgumentException("At least one screenshot evidence file is required");
+        }
+
+        List<MultipartFile> validFiles = files.stream()
+                .filter(f -> f != null && !f.isEmpty())
+                .collect(Collectors.toList());
+
+        if (validFiles.isEmpty()) {
+            throw new IllegalArgumentException("At least one screenshot evidence file is required");
+        }
+
+        long totalSize = 0;
+        for (MultipartFile file : validFiles) {
+            EvidenceService.validateScreenshotFile(file);
+            totalSize += file.getSize();
+        }
+        if (totalSize > 50 * 1024 * 1024) {
+            throw new IllegalArgumentException("Total upload size exceeds the 50MB limit");
+        }
+
+        if (request.getUserId() == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new IllegalArgumentException("User not found with ID: " + request.getUserId()));
+
+        String complaintNumber = generateComplaintNumber();
+
+        Complaint complaint = new Complaint();
+        complaint.setComplaintNumber(complaintNumber);
+        complaint.setTitle(request.getTitle().trim());
+        complaint.setCategory(request.getCategory().trim());
+        complaint.setPlatform(request.getPlatform().trim());
+        complaint.setDescription(request.getDescription().trim());
+        complaint.setPostUrl(request.getPostUrl().trim());
+        complaint.setIncidentDateTime(request.getIncidentDateTime());
+        complaint.setUser(user);
+        complaint.setStatus("PENDING");
+
+        Complaint savedComplaint = complaintRepository.save(complaint);
+
+        // Save each attached evidence file
+        for (MultipartFile file : validFiles) {
+            evidenceService.saveEvidenceForComplaint(savedComplaint, file);
+        }
+
+        // Automatic severity analysis
+        ComplaintAnalysis analysis = severityAnalysisService.analyzeComplaint(savedComplaint);
+        complaintRepository.save(savedComplaint);
+
+        // Notification
+        notificationService.notifyUser(
+                user,
+                "Complaint Filed: " + savedComplaint.getComplaintNumber(),
+                "Incident on " + savedComplaint.getPlatform() + " filed with " + validFiles.size() + " screenshot proof(s). Automated triage assessed preliminary severity: " + analysis.getDetectedSeverity() + ".",
+                "SUBMISSION",
+                savedComplaint.getComplaintNumber()
+        );
+
+        ComplaintResponse response = new ComplaintResponse(
+                savedComplaint.getId(),
+                savedComplaint.getComplaintNumber(),
+                "Complaint registered successfully",
+                analysis.getDetectedSeverity(),
+                analysis.getRiskScore(),
+                analysis.getPriority(),
+                savedComplaint.getStatus(),
+                analysis.getAssessmentNote(),
+                analysis.getDetectedCategory(),
+                analysis.getMatchedTerms()
+        );
+        response.setPostUrl(savedComplaint.getPostUrl());
+        return response;
     }
 
     @Transactional(readOnly = true)
@@ -147,6 +298,7 @@ public class ComplaintService {
         response.setCategory(complaint.getCategory());
         response.setPlatform(complaint.getPlatform());
         response.setDescription(complaint.getDescription());
+        response.setPostUrl(complaint.getPostUrl());
         response.setThreatLevel(complaint.getThreatLevel());
         response.setPriority(complaint.getPriority());
         response.setStatus(complaint.getStatus());
@@ -170,16 +322,34 @@ public class ComplaintService {
     public List<ComplaintSummaryResponse> getAllComplaints() {
         List<Complaint> complaints = complaintRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
         return complaints.stream()
-                .map(c -> new ComplaintSummaryResponse(
-                        c.getId(),
-                        c.getComplaintNumber(),
-                        c.getTitle(),
-                        (c.getUser() != null) ? c.getUser().getName() : "Unknown",
-                        c.getThreatLevel(),
-                        c.getPriority(),
-                        c.getStatus(),
-                        c.getCreatedAt()
-                ))
+                .map(c -> {
+                    List<Evidence> evidenceList = evidenceRepository.findByComplaintId(c.getId());
+                    List<ComplaintDetailResponse.EvidenceItem> evidenceItems = evidenceList.stream()
+                            .map(e -> new ComplaintDetailResponse.EvidenceItem(
+                                    e.getId(),
+                                    e.getFileName(),
+                                    e.getFilePath(),
+                                    e.getVerificationStatus(),
+                                    e.getUploadedAt()
+                            ))
+                            .collect(Collectors.toList());
+
+                    ComplaintSummaryResponse resp = new ComplaintSummaryResponse(
+                            c.getId(),
+                            c.getComplaintNumber(),
+                            c.getTitle(),
+                            (c.getUser() != null) ? c.getUser().getName() : "Unknown",
+                            c.getThreatLevel(),
+                            c.getPriority(),
+                            c.getStatus(),
+                            c.getCreatedAt()
+                    );
+                    resp.setPlatform(c.getPlatform());
+                    resp.setDescription(c.getDescription());
+                    resp.setPostUrl(c.getPostUrl());
+                    resp.setEvidence(evidenceItems);
+                    return resp;
+                })
                 .collect(Collectors.toList());
     }
 
@@ -187,16 +357,34 @@ public class ComplaintService {
     public List<ComplaintSummaryResponse> getComplaintsByUserId(Long userId) {
         List<Complaint> complaints = complaintRepository.findByUserIdOrderByCreatedAtDesc(userId);
         return complaints.stream()
-                .map(c -> new ComplaintSummaryResponse(
-                        c.getId(),
-                        c.getComplaintNumber(),
-                        c.getTitle(),
-                        (c.getUser() != null) ? c.getUser().getName() : "Unknown",
-                        c.getThreatLevel(),
-                        c.getPriority(),
-                        c.getStatus(),
-                        c.getCreatedAt()
-                ))
+                .map(c -> {
+                    List<Evidence> evidenceList = evidenceRepository.findByComplaintId(c.getId());
+                    List<ComplaintDetailResponse.EvidenceItem> evidenceItems = evidenceList.stream()
+                            .map(e -> new ComplaintDetailResponse.EvidenceItem(
+                                    e.getId(),
+                                    e.getFileName(),
+                                    e.getFilePath(),
+                                    e.getVerificationStatus(),
+                                    e.getUploadedAt()
+                            ))
+                            .collect(Collectors.toList());
+
+                    ComplaintSummaryResponse resp = new ComplaintSummaryResponse(
+                            c.getId(),
+                            c.getComplaintNumber(),
+                            c.getTitle(),
+                            (c.getUser() != null) ? c.getUser().getName() : "Unknown",
+                            c.getThreatLevel(),
+                            c.getPriority(),
+                            c.getStatus(),
+                            c.getCreatedAt()
+                    );
+                    resp.setPlatform(c.getPlatform());
+                    resp.setDescription(c.getDescription());
+                    resp.setPostUrl(c.getPostUrl());
+                    resp.setEvidence(evidenceItems);
+                    return resp;
+                })
                 .collect(Collectors.toList());
     }
 

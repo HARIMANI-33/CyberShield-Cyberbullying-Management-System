@@ -17,6 +17,7 @@ public class ComplaintDetailResponse {
     private LocalDateTime createdAt;
     private String userName;
     private String userEmail;
+    private String postUrl;
     private List<EvidenceItem> evidence;
     private PreliminaryAnalysisInfo preliminaryAnalysis;
 
@@ -280,5 +281,13 @@ public class ComplaintDetailResponse {
 
     public void setAdminRemarks(String adminRemarks) {
         this.adminRemarks = adminRemarks;
+    }
+
+    public String getPostUrl() {
+        return postUrl;
+    }
+
+    public void setPostUrl(String postUrl) {
+        this.postUrl = postUrl;
     }
 }

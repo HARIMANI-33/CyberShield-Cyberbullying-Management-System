@@ -244,6 +244,80 @@
             color: #fca5a5;
         }
 
+        /* Form Validation & Screenshot Preview Styling */
+        .field-error {
+            color: #f87171;
+            font-size: 0.82rem;
+            margin-top: 0.35rem;
+            display: none;
+            font-weight: 500;
+        }
+
+        .form-control.is-invalid, .form-select.is-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.25) !important;
+        }
+
+        .screenshot-card {
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 0.6rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .screenshot-card:hover {
+            border-color: var(--cyan);
+            transform: translateY(-2px);
+        }
+
+        .screenshot-card img {
+            width: 100%;
+            height: 90px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-bottom: 0.4rem;
+        }
+
+        .screenshot-card-name {
+            font-size: 0.75rem;
+            color: #cbd5e1;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: center;
+            font-family: monospace;
+        }
+
+        .screenshot-card-size {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+        }
+
+        .btn-remove-photo {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+            font-size: 0.72rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+
+        .btn-remove-photo:hover {
+            background: rgba(239, 68, 68, 0.4);
+            color: #ffffff;
+        }
+
         /* SUCCESS MODAL STYLING */
         .modal-overlay {
             position: fixed;
@@ -495,14 +569,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="title">Complaint Title</label>
-                    <input type="text" id="title" class="form-control" placeholder="e.g. Abusive messages and harassment on Instagram" required>
+                    <label class="form-label" for="title">Complaint Title <span style="color: #f87171;">*</span></label>
+                    <input type="text" id="title" class="form-control" placeholder="e.g. Abusive messages and harassment on Instagram" required oninput="clearFieldError('title')">
+                    <div id="titleError" class="field-error"></div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
                     <div class="form-group">
-                        <label class="form-label" for="category">Incident Category</label>
-                        <select id="category" class="form-select" required>
+                        <label class="form-label" for="category">Incident Category <span style="color: #f87171;">*</span></label>
+                        <select id="category" class="form-select" required onchange="clearFieldError('category')">
+                            <option value="" disabled selected>-- Select Incident Category --</option>
                             <option value="HARASSMENT">Harassment</option>
                             <option value="HATE_SPEECH">Hate Speech</option>
                             <option value="IMPERSONATION">Impersonation / Fake Profile</option>
@@ -511,11 +587,13 @@
                             <option value="STALKING">Online Stalking</option>
                             <option value="OTHER">Other Malicious Behavior</option>
                         </select>
+                        <div id="categoryError" class="field-error"></div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="platform">Perpetrator Platform</label>
-                        <select id="platform" class="form-select" required>
+                        <label class="form-label" for="platform">Perpetrator Platform <span style="color: #f87171;">*</span></label>
+                        <select id="platform" class="form-select" required onchange="clearFieldError('platform')">
+                            <option value="" disabled selected>-- Select Platform --</option>
                             <option value="Instagram">Instagram</option>
                             <option value="Discord">Discord</option>
                             <option value="Twitter / X">Twitter / X</option>
@@ -525,20 +603,58 @@
                             <option value="Reddit">Reddit</option>
                             <option value="Other Platform">Other Platform</option>
                         </select>
+                        <div id="platformError" class="field-error"></div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="description">Detailed Description of Incident</label>
-                    <textarea id="description" class="form-control" rows="5" placeholder="Detail what happened, what abusive words or threats were used, perpetrator usernames, and approximate dates/times..." required></textarea>
+                    <label class="form-label" for="description">Detailed Description of Incident <span style="color: #f87171;">*</span></label>
+                    <textarea id="description" class="form-control" rows="5" placeholder="Detail what happened, what abusive words or threats were used, perpetrator usernames, and approximate dates/times..." required oninput="clearFieldError('description')"></textarea>
+                    <div id="descriptionError" class="field-error"></div>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="evidenceFile">Attach Screenshot Evidence (Optional)</label>
-                    <input type="file" id="evidenceFile" class="form-control" accept="image/*,.pdf" style="padding: 0.55rem 0.75rem;">
+                <!-- Screenshot Attachment Section (Multiple files & Upload / Add More Photos) -->
+                <div class="form-group" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 1.1rem 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.65rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <label class="form-label" for="evidenceFileInput" style="margin-bottom: 0; cursor: pointer;">
+                            Screenshot Evidence <span style="color: #f87171;">*</span>
+                            <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted); margin-left: 0.35rem;">(At least 1 screenshot is required)</span>
+                        </label>
+                        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                            <button type="button" id="btnUploadPhotos" onclick="triggerFileInput()" class="btn btn-primary btn-sm" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); border: 1px solid rgba(56, 189, 248, 0.5); color: #ffffff; font-weight: 700; padding: 0.45rem 1rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.85rem; box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);">
+                                📷 Upload Photos
+                            </button>
+                            <button type="button" id="btnAddMorePhotos" onclick="triggerFileInput()" class="btn btn-secondary btn-sm" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); color: #38bdf8; font-weight: 600; padding: 0.45rem 0.95rem; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem;">
+                                ➕ Add More Photos
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hidden Multi-file input supporting PNG, JPG, JPEG, WebP -->
+                    <input type="file" id="evidenceFileInput" name="files" accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp" multiple style="display: none;" onchange="handleFilesSelected(event)">
+
+                    <!-- Interactive Drag-and-Drop / Clickable Upload Area -->
+                    <div id="uploadDropZone" onclick="triggerFileInput()" style="border: 2px dashed rgba(56, 189, 248, 0.35); border-radius: 10px; padding: 1.4rem 1rem; text-align: center; background: rgba(15, 23, 42, 0.6); cursor: pointer; transition: all 0.2s ease; margin-bottom: 0.75rem;">
+                        <div style="font-size: 2.2rem; margin-bottom: 0.35rem;">🖼️</div>
+                        <div style="font-weight: 700; color: #f8fafc; font-size: 0.95rem;">Click anywhere here or click "Upload Photos" to browse files</div>
+                        <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Supported formats: PNG, JPG, JPEG, WebP &bull; Max 10MB per photo (50MB total)</div>
+                    </div>
+
+                    <!-- Previews of selected photos with remove button -->
+                    <div id="screenshotPreviewGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem;"></div>
+
+                    <div id="fileCountBadge" style="font-size: 0.82rem; color: #94a3b8; margin-top: 0.5rem;">No screenshots selected yet.</div>
+                    <div id="evidenceError" class="field-error"></div>
+                </div>
+
+                <!-- Post URL Section (Compulsory, Directly Below Screenshots) -->
+                <div class="form-group" style="margin-top: 1.25rem;">
+                    <label class="form-label" for="postUrl">Post URL <span style="color: #f87171;">*</span></label>
+                    <input type="url" id="postUrl" class="form-control" placeholder="https://www.instagram.com/p/C3xYz1234/" required oninput="clearFieldError('postUrl')">
                     <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; display: block;">
-                        Supported formats: PNG, JPG, JPEG, WebP. Screenshot will be securely stored for forensic verification.
+                        Enter the full URL of the original social media post containing the bullying comment or content (must start with http:// or https://).
                     </small>
+                    <div id="postUrlError" class="field-error"></div>
                 </div>
 
                 <button type="submit" id="submitBtn" class="btn-submit">
@@ -584,6 +700,10 @@
                     <span class="detail-label">Evidence:</span>
                     <span class="detail-value" id="popupEvidenceStatus" style="color: #6ee7b7; font-size: 0.88rem;">📸 Uploaded</span>
                 </div>
+                <div class="success-detail-row" id="popupPostUrlRow" style="display: none;">
+                    <span class="detail-label">Original Post URL:</span>
+                    <span class="detail-value" id="popupPostUrlValue" style="color: #38bdf8; word-break: break-all; font-size: 0.85rem;"></span>
+                </div>
             </div>
             
             <div class="review-notice">
@@ -604,6 +724,14 @@
 
     <script>
         let submittedComplaintId = null;
+        let selectedFiles = []; // Holds all attached screenshot files
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.innerText = str;
+            return div.innerHTML;
+        }
 
         window.addEventListener('DOMContentLoaded', async () => {
             // URL params fallback for test suites
@@ -625,6 +753,7 @@
                         document.getElementById('displayReporterName').innerText = user.name || user.email;
                         document.getElementById('userIdBadge').innerText = `ID: ${user.id}`;
                         document.getElementById('userBadgeDisplay').innerText = `👤 ${user.name}`;
+                        setupUploadListeners();
                         return;
                     }
                 }
@@ -642,38 +771,323 @@
                     }
                 } catch (e) {}
             }
+
+            setupUploadListeners();
         });
+
+        function setupUploadListeners() {
+            const btnUpload = document.getElementById('btnUploadPhotos');
+            const btnAddMore = document.getElementById('btnAddMorePhotos');
+            const dropZone = document.getElementById('uploadDropZone');
+
+            const onTriggerClick = (e) => {
+                if (e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                triggerFileInput();
+            };
+
+            if (btnUpload && !btnUpload._bound) {
+                btnUpload.addEventListener('click', onTriggerClick);
+                btnUpload._bound = true;
+            }
+            if (btnAddMore && !btnAddMore._bound) {
+                btnAddMore.addEventListener('click', onTriggerClick);
+                btnAddMore._bound = true;
+            }
+            if (dropZone && !dropZone._bound) {
+                dropZone.addEventListener('click', onTriggerClick);
+
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = '#38bdf8';
+                    dropZone.style.backgroundColor = 'rgba(56, 189, 248, 0.1)';
+                });
+                dropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+                    dropZone.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+                });
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.style.borderColor = 'rgba(56, 189, 248, 0.35)';
+                    dropZone.style.backgroundColor = 'rgba(15, 23, 42, 0.6)';
+                    if (e.dataTransfer && e.dataTransfer.files) {
+                        processFilesList(e.dataTransfer.files);
+                    }
+                });
+                dropZone._bound = true;
+            }
+        }
+
+        function triggerFileInput() {
+            const input = document.getElementById('evidenceFileInput');
+            if (input) {
+                input.click();
+            }
+        }
+
+        function processFilesList(files) {
+            if (!files || files.length === 0) return;
+
+            const allowedExts = ['.png', '.jpg', '.jpeg', '.webp'];
+            let hasError = false;
+            let errorMsg = '';
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const nameLower = file.name.toLowerCase();
+                const isAllowed = allowedExts.some(ext => nameLower.endsWith(ext)) || (file.type && file.type.startsWith('image/'));
+
+                if (!isAllowed) {
+                    hasError = true;
+                    errorMsg = `File "${file.name}" has an unsupported format. Only PNG, JPG, JPEG, and WebP are allowed.`;
+                    break;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    hasError = true;
+                    errorMsg = `File "${file.name}" exceeds the 10MB size limit.`;
+                    break;
+                }
+
+                // Check total size limit
+                let currentTotal = selectedFiles.reduce((acc, f) => acc + f.size, 0) + file.size;
+                if (currentTotal > 50 * 1024 * 1024) {
+                    hasError = true;
+                    errorMsg = `Total upload size exceeds 50MB limit.`;
+                    break;
+                }
+
+                // Avoid exact duplicates
+                const isDuplicate = selectedFiles.some(f => f.name === file.name && f.size === file.size);
+                if (!isDuplicate) {
+                    selectedFiles.push(file);
+                }
+            }
+
+            if (hasError) {
+                setFieldError('evidence', errorMsg);
+            } else {
+                clearFieldError('evidence');
+            }
+
+            renderPreviews();
+        }
+
+        function handleFilesSelected(event) {
+            if (event && event.target && event.target.files) {
+                processFilesList(event.target.files);
+                // Reset input so user can pick the same file again if removed
+                event.target.value = '';
+            }
+        }
+
+        function removeFile(index) {
+            if (index >= 0 && index < selectedFiles.length) {
+                selectedFiles.splice(index, 1);
+                renderPreviews();
+                if (selectedFiles.length === 0) {
+                    setFieldError('evidence', 'At least one screenshot evidence file is required.');
+                } else {
+                    clearFieldError('evidence');
+                }
+            }
+        }
+
+        function renderPreviews() {
+            const grid = document.getElementById('screenshotPreviewGrid');
+            const badge = document.getElementById('fileCountBadge');
+
+            if (selectedFiles.length === 0) {
+                grid.innerHTML = '';
+                badge.innerText = 'No screenshots selected yet.';
+                return;
+            }
+
+            badge.innerText = `${selectedFiles.length} screenshot(s) selected:`;
+
+            let html = '';
+            selectedFiles.forEach((file, idx) => {
+                const url = URL.createObjectURL(file);
+                const sizeKb = (file.size / 1024).toFixed(1);
+                const sizeText = file.size > 1024 * 1024 ? `${(file.size / (1024 * 1024)).toFixed(1)} MB` : `${sizeKb} KB`;
+
+                html += `
+                    <div class="screenshot-card">
+                        <img src="${url}" alt="Screenshot Preview">
+                        <div class="screenshot-card-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</div>
+                        <div class="screenshot-card-size">${sizeText}</div>
+                        <button type="button" class="btn-remove-photo" onclick="removeFile(${idx})">✕ Remove</button>
+                    </div>
+                `;
+            });
+
+            grid.innerHTML = html;
+        }
+
+        function clearFieldError(fieldId) {
+            const errEl = document.getElementById(fieldId + 'Error');
+            if (errEl) {
+                errEl.innerText = '';
+                errEl.style.display = 'none';
+            }
+            const inputEl = document.getElementById(fieldId);
+            if (inputEl) {
+                inputEl.classList.remove('is-invalid');
+            }
+        }
+
+        function setFieldError(fieldId, message) {
+            const errEl = document.getElementById(fieldId + 'Error');
+            if (errEl) {
+                errEl.innerText = message;
+                errEl.style.display = 'block';
+            }
+            const inputEl = document.getElementById(fieldId);
+            if (inputEl) {
+                inputEl.classList.add('is-invalid');
+            }
+        }
+
+        function isValidHttpOrHttpsUrl(str) {
+            if (!str || !str.trim()) return false;
+            const trimmed = str.trim();
+            const lower = trimmed.toLowerCase();
+            if (!lower.startsWith('http://') && !lower.startsWith('https://')) {
+                return false;
+            }
+            try {
+                const parsed = new URL(trimmed);
+                return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function validateComplaintForm() {
+            let isValid = true;
+            let firstInvalidEl = null;
+
+            // 1. Title validation
+            const titleInput = document.getElementById('title');
+            const titleVal = titleInput.value.trim();
+            if (!titleVal) {
+                setFieldError('title', 'Complaint title is required.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = titleInput;
+            } else {
+                clearFieldError('title');
+            }
+
+            // 2. Category validation
+            const catSelect = document.getElementById('category');
+            if (!catSelect.value) {
+                setFieldError('category', 'Incident category is required. Please select one.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = catSelect;
+            } else {
+                clearFieldError('category');
+            }
+
+            // 3. Platform validation
+            const platSelect = document.getElementById('platform');
+            if (!platSelect.value) {
+                setFieldError('platform', 'Perpetrator platform is required. Please select one.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = platSelect;
+            } else {
+                clearFieldError('platform');
+            }
+
+            // 4. Description validation
+            const descInput = document.getElementById('description');
+            const descVal = descInput.value.trim();
+            if (!descVal) {
+                setFieldError('description', 'Detailed description is required and cannot be empty or whitespace only.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = descInput;
+            } else {
+                clearFieldError('description');
+            }
+
+            // 5. Screenshot Evidence validation (At least 1 required)
+            if (selectedFiles.length === 0) {
+                setFieldError('evidence', 'At least one screenshot evidence file is required.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = document.getElementById('btnAddMorePhotos');
+            } else {
+                clearFieldError('evidence');
+            }
+
+            // 6. Post URL validation (Mandatory, valid HTTP/HTTPS)
+            const postUrlInput = document.getElementById('postUrl');
+            const postUrlVal = postUrlInput.value.trim();
+            if (!postUrlVal) {
+                setFieldError('postUrl', 'Original social media Post URL is required.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = postUrlInput;
+            } else if (!isValidHttpOrHttpsUrl(postUrlVal)) {
+                setFieldError('postUrl', 'Invalid Post URL. Must be a valid web address starting with http:// or https://');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = postUrlInput;
+            } else {
+                clearFieldError('postUrl');
+            }
+
+            if (!isValid && firstInvalidEl) {
+                if (typeof firstInvalidEl.focus === 'function') {
+                    firstInvalidEl.focus();
+                }
+            }
+
+            return isValid;
+        }
 
         async function handleComplaintSubmit(event) {
             event.preventDefault();
             const alertBox = document.getElementById('alertBox');
             const submitBtn = document.getElementById('submitBtn');
-            const fileInput = document.getElementById('evidenceFile');
 
             alertBox.style.display = 'none';
 
-            let uidVal = parseInt(document.getElementById('userId').value);
-            if (!uidVal || isNaN(uidVal)) {
-                uidVal = 1; // Fallback
+            // Complete form validation before any submission
+            if (!validateComplaintForm()) {
+                alertBox.className = 'alert-box alert-error';
+                alertBox.innerHTML = `<strong>⚠️ Please Complete All Required Fields:</strong> Verify the highlighted fields above before submitting.`;
+                alertBox.style.display = 'block';
+                return;
             }
 
-            const payload = {
-                userId: uidVal,
-                title: document.getElementById('title').value.trim(),
-                category: document.getElementById('category').value,
-                platform: document.getElementById('platform').value,
-                description: document.getElementById('description').value.trim()
-            };
+            let uidVal = parseInt(document.getElementById('userId').value);
+            if (!uidVal || isNaN(uidVal)) {
+                uidVal = 1;
+            }
 
             submitBtn.disabled = true;
             submitBtn.innerText = 'Submitting & Analyzing...';
 
             try {
-                // 1. Submit complaint via existing API
+                // Build atomic multipart request with all fields and multiple screenshots
+                const formData = new FormData();
+                formData.append('userId', uidVal);
+                formData.append('title', document.getElementById('title').value.trim());
+                formData.append('category', document.getElementById('category').value);
+                formData.append('platform', document.getElementById('platform').value);
+                formData.append('description', document.getElementById('description').value.trim());
+                formData.append('postUrl', document.getElementById('postUrl').value.trim());
+
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    formData.append('files', selectedFiles[i]);
+                }
+
                 const response = await fetch('/api/complaints', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: formData
                 });
 
                 const data = await response.json();
@@ -689,29 +1103,7 @@
 
                 submittedComplaintId = data.id;
 
-                // 2. Upload screenshot evidence if attached
-                let evidenceAttached = false;
-                let evFileName = '';
-                if (fileInput.files.length > 0 && submittedComplaintId) {
-                    const formData = new FormData();
-                    formData.append('file', fileInput.files[0]);
-
-                    try {
-                        const evResponse = await fetch(`/api/complaints/${submittedComplaintId}/evidence`, {
-                            method: 'POST',
-                            body: formData
-                        });
-                        if (evResponse.ok) {
-                            const evData = await evResponse.json();
-                            evidenceAttached = true;
-                            evFileName = evData.fileName || fileInput.files[0].name;
-                        }
-                    } catch (evErr) {
-                        console.warn('Evidence upload failed:', evErr);
-                    }
-                }
-
-                // 3. Populate Success Popup with ACTUAL backend data
+                // Populate Success Popup with returned backend data
                 const compNum = data.complaintNumber || (`CS-${data.id}`);
                 document.getElementById('popupComplaintNumber').innerText = compNum;
 
@@ -745,16 +1137,26 @@
                     catEl.innerText = data.detectedCategory || (document.getElementById('category') ? document.getElementById('category').value : 'Online Harassment');
                 }
 
-                // Evidence row
+                // Evidence row in popup
                 const evRow = document.getElementById('popupEvidenceRow');
-                if (evidenceAttached) {
-                    document.getElementById('popupEvidenceStatus').innerText = `📸 ${evFileName} (Pending Verification)`;
+                if (selectedFiles.length > 0) {
+                    document.getElementById('popupEvidenceStatus').innerText = `📸 ${selectedFiles.length} Screenshot(s) Attached (Pending Verification)`;
                     evRow.style.display = 'flex';
                 } else {
                     evRow.style.display = 'none';
                 }
 
-                // 4. SHOW SUCCESS POPUP (CRITICAL REQUIREMENT - DO NOT REDIRECT BEFORE SHOWN)
+                // Post URL row in popup
+                const postUrlRow = document.getElementById('popupPostUrlRow');
+                const postUrlVal = data.postUrl || document.getElementById('postUrl').value.trim();
+                if (postUrlVal) {
+                    document.getElementById('popupPostUrlValue').innerText = postUrlVal;
+                    postUrlRow.style.display = 'flex';
+                } else {
+                    postUrlRow.style.display = 'none';
+                }
+
+                // SHOW SUCCESS POPUP
                 document.getElementById('successModal').style.display = 'flex';
 
             } catch (err) {
