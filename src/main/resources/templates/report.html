@@ -558,14 +558,34 @@
 
             <!-- Complaint Form -->
             <form id="complaintForm" onsubmit="handleComplaintSubmit(event)">
-                <!-- User Association Info -->
-                <div class="form-group" id="reporterInfoBox" style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 10px; padding: 0.85rem 1rem; display: flex; align-items: center; justify-content: space-between;">
-                    <div>
-                        <span style="font-size: 0.85rem; color: #94a3b8; display: block;">Filing As Registered User:</span>
-                        <strong id="displayReporterName" style="color: #38bdf8; font-size: 0.95rem;">Detecting account...</strong>
+                <!-- Reporting User / Complainant Details -->
+                <div class="form-group" style="background: rgba(56, 189, 248, 0.07); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 12px; padding: 1.15rem 1.25rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
+                        <span style="font-weight: 700; color: #38bdf8; font-size: 0.95rem; display: flex; align-items: center; gap: 0.45rem;">
+                            👤 Reporting User Details
+                        </span>
+                        <span id="userIdBadge" style="font-size: 0.8rem; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.35); padding: 0.25rem 0.65rem; border-radius: 6px; color: #38bdf8; font-weight: 600;">
+                            Detecting Account...
+                        </span>
                     </div>
-                    <input type="hidden" id="userId" name="userId" value="1">
-                    <span id="userIdBadge" style="font-size: 0.8rem; background: rgba(255,255,255,0.06); padding: 0.25rem 0.6rem; border-radius: 6px; color: #cbd5e1;"></span>
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem;">
+                        <div>
+                            <label class="form-label" for="reporterName">Reporting User / Complainant Name <span style="color: #f87171;">*</span></label>
+                            <input type="text" id="reporterName" class="form-control" placeholder="Enter your full name or complainant alias" required oninput="clearFieldError('reporterName')">
+                            <small style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.3rem; display: block;">
+                                Auto-filled from your registered account. You can edit this name or provide an alias.
+                            </small>
+                            <div id="reporterNameError" class="field-error"></div>
+                        </div>
+                        <div>
+                            <label class="form-label" for="userId">Reporting User ID <span style="color: #f87171;">*</span></label>
+                            <input type="number" id="userId" name="userId" class="form-control" value="1" min="1" required oninput="clearFieldError('userId')">
+                            <small style="color: var(--text-muted); font-size: 0.78rem; margin-top: 0.3rem; display: block;">
+                                Linked system account ID.
+                            </small>
+                            <div id="userIdError" class="field-error"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -575,9 +595,15 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <!-- Incident Category Section (Presets + Manual Entry) -->
                     <div class="form-group">
-                        <label class="form-label" for="category">Incident Category <span style="color: #f87171;">*</span></label>
-                        <select id="category" class="form-select" required onchange="clearFieldError('category')">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                            <label class="form-label" for="category" style="margin-bottom: 0;">Incident Category <span style="color: #f87171;">*</span></label>
+                            <button type="button" id="btnToggleCustomCategory" onclick="toggleCustomCategoryInput()" style="background: none; border: none; color: #38bdf8; font-size: 0.8rem; cursor: pointer; text-decoration: underline; font-weight: 600;">
+                                ✏️ Enter Manually
+                            </button>
+                        </div>
+                        <select id="category" class="form-select" required onchange="handleCategoryChange()">
                             <option value="" disabled selected>-- Select Incident Category --</option>
                             <option value="HARASSMENT">Harassment</option>
                             <option value="HATE_SPEECH">Hate Speech</option>
@@ -585,14 +611,26 @@
                             <option value="DOXXING">Doxxing / Privacy Violation</option>
                             <option value="THREATS">Direct Violence Threats</option>
                             <option value="STALKING">Online Stalking</option>
-                            <option value="OTHER">Other Malicious Behavior</option>
+                            <option value="DEFAMATION">Defamation / Slander</option>
+                            <option value="CYBER_BULLYING">Cyberbullying / Trolling</option>
+                            <option value="OTHER">Other / Enter Manually...</option>
                         </select>
+                        <div id="customCategoryWrapper" style="display: none; margin-top: 0.55rem;">
+                            <input type="text" id="customCategory" class="form-control" placeholder="Type custom category (e.g. Blackmail, Sextortion...)" oninput="clearFieldError('category')">
+                            <small style="color: #38bdf8; font-size: 0.78rem; display: block; margin-top: 0.25rem;">Custom category will be saved with your complaint.</small>
+                        </div>
                         <div id="categoryError" class="field-error"></div>
                     </div>
 
+                    <!-- Perpetrator Platform Section (Presets + Manual Entry) -->
                     <div class="form-group">
-                        <label class="form-label" for="platform">Perpetrator Platform <span style="color: #f87171;">*</span></label>
-                        <select id="platform" class="form-select" required onchange="clearFieldError('platform')">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+                            <label class="form-label" for="platform" style="margin-bottom: 0;">Perpetrator Platform <span style="color: #f87171;">*</span></label>
+                            <button type="button" id="btnToggleCustomPlatform" onclick="toggleCustomPlatformInput()" style="background: none; border: none; color: #38bdf8; font-size: 0.8rem; cursor: pointer; text-decoration: underline; font-weight: 600;">
+                                ✏️ Enter Manually
+                            </button>
+                        </div>
+                        <select id="platform" class="form-select" required onchange="handlePlatformChange()">
                             <option value="" disabled selected>-- Select Platform --</option>
                             <option value="Instagram">Instagram</option>
                             <option value="Discord">Discord</option>
@@ -601,8 +639,15 @@
                             <option value="Telegram">Telegram</option>
                             <option value="Facebook">Facebook</option>
                             <option value="Reddit">Reddit</option>
-                            <option value="Other Platform">Other Platform</option>
+                            <option value="YouTube">YouTube</option>
+                            <option value="Snapchat">Snapchat</option>
+                            <option value="TikTok">TikTok</option>
+                            <option value="Other">Other / Enter Manually...</option>
                         </select>
+                        <div id="customPlatformWrapper" style="display: none; margin-top: 0.55rem;">
+                            <input type="text" id="customPlatform" class="form-control" placeholder="Type custom platform (e.g. Signal, Twitch, WeChat, Roblox...)" oninput="clearFieldError('platform')">
+                            <small style="color: #38bdf8; font-size: 0.78rem; display: block; margin-top: 0.25rem;">Custom platform will be saved with your complaint.</small>
+                        </div>
                         <div id="platformError" class="field-error"></div>
                     </div>
                 </div>
@@ -677,6 +722,14 @@
                     <span class="detail-value id-value" id="popupComplaintNumber">CS-2026-014</span>
                 </div>
                 <div class="success-detail-row">
+                    <span class="detail-label">Complainant / Reporter:</span>
+                    <span class="detail-value" id="popupReporterName" style="color: #ffffff; font-weight: 700;"></span>
+                </div>
+                <div class="success-detail-row">
+                    <span class="detail-label">Platform:</span>
+                    <span class="detail-value" id="popupPlatformText" style="color: #38bdf8; font-weight: 700;"></span>
+                </div>
+                <div class="success-detail-row">
                     <span class="detail-label">Status:</span>
                     <span class="detail-value" id="popupStatusBadge">
                         <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">PENDING</span>
@@ -734,13 +787,16 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // URL params fallback for test suites
+            // URL params fallback for test suites or links
             const urlParams = new URLSearchParams(window.location.search);
             const uidParam = urlParams.get('userId');
             if (uidParam) {
                 document.getElementById('userId').value = uidParam;
-                document.getElementById('displayReporterName').innerText = `User #${uidParam}`;
-                document.getElementById('userIdBadge').innerText = `ID: ${uidParam}`;
+                document.getElementById('userIdBadge').innerText = `User ID #${uidParam}`;
+            }
+            const nameParam = urlParams.get('userName') || urlParams.get('reporterName');
+            if (nameParam) {
+                document.getElementById('reporterName').value = nameParam;
             }
 
             // Identify current logged-in user
@@ -750,8 +806,10 @@
                     const user = await res.json();
                     if (user && user.id) {
                         document.getElementById('userId').value = user.id;
-                        document.getElementById('displayReporterName').innerText = user.name || user.email;
-                        document.getElementById('userIdBadge').innerText = `ID: ${user.id}`;
+                        if (!document.getElementById('reporterName').value) {
+                            document.getElementById('reporterName').value = user.name || user.email || `User #${user.id}`;
+                        }
+                        document.getElementById('userIdBadge').innerText = `👤 Account: ${user.name || user.email} (ID: ${user.id})`;
                         document.getElementById('userBadgeDisplay').innerText = `👤 ${user.name}`;
                         setupUploadListeners();
                         return;
@@ -765,8 +823,10 @@
                     const u = JSON.parse(raw);
                     if (u.id) {
                         document.getElementById('userId').value = u.id;
-                        document.getElementById('displayReporterName').innerText = u.name || u.email;
-                        document.getElementById('userIdBadge').innerText = `ID: ${u.id}`;
+                        if (!document.getElementById('reporterName').value) {
+                            document.getElementById('reporterName').value = u.name || u.email || `User #${u.id}`;
+                        }
+                        document.getElementById('userIdBadge').innerText = `👤 Account: ${u.name || u.email} (ID: ${u.id})`;
                         document.getElementById('userBadgeDisplay').innerText = `👤 ${u.name}`;
                     }
                 } catch (e) {}
@@ -774,6 +834,50 @@
 
             setupUploadListeners();
         });
+
+        function handleCategoryChange() {
+            clearFieldError('category');
+            const catSelect = document.getElementById('category');
+            const customWrap = document.getElementById('customCategoryWrapper');
+            const customInput = document.getElementById('customCategory');
+            if (catSelect.value === 'OTHER') {
+                customWrap.style.display = 'block';
+                customInput.focus();
+            } else {
+                customWrap.style.display = 'none';
+            }
+        }
+
+        function toggleCustomCategoryInput() {
+            const catSelect = document.getElementById('category');
+            const customWrap = document.getElementById('customCategoryWrapper');
+            const customInput = document.getElementById('customCategory');
+            catSelect.value = 'OTHER';
+            customWrap.style.display = 'block';
+            customInput.focus();
+        }
+
+        function handlePlatformChange() {
+            clearFieldError('platform');
+            const platSelect = document.getElementById('platform');
+            const customWrap = document.getElementById('customPlatformWrapper');
+            const customInput = document.getElementById('customPlatform');
+            if (platSelect.value === 'Other') {
+                customWrap.style.display = 'block';
+                customInput.focus();
+            } else {
+                customWrap.style.display = 'none';
+            }
+        }
+
+        function toggleCustomPlatformInput() {
+            const platSelect = document.getElementById('platform');
+            const customWrap = document.getElementById('customPlatformWrapper');
+            const customInput = document.getElementById('customPlatform');
+            platSelect.value = 'Other';
+            customWrap.style.display = 'block';
+            customInput.focus();
+        }
 
         function setupUploadListeners() {
             const btnUpload = document.getElementById('btnUploadPhotos');
@@ -973,6 +1077,27 @@
             let isValid = true;
             let firstInvalidEl = null;
 
+            // 0. Reporting User Name & ID validation
+            const repNameInput = document.getElementById('reporterName');
+            const repNameVal = repNameInput ? repNameInput.value.trim() : '';
+            if (!repNameVal) {
+                setFieldError('reporterName', 'Reporting user / complainant name is required.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = repNameInput;
+            } else {
+                clearFieldError('reporterName');
+            }
+
+            const userIdInput = document.getElementById('userId');
+            const userIdVal = userIdInput ? parseInt(userIdInput.value) : 0;
+            if (!userIdVal || isNaN(userIdVal) || userIdVal < 1) {
+                setFieldError('userId', 'A valid reporting user ID (at least 1) is required.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = userIdInput;
+            } else {
+                clearFieldError('userId');
+            }
+
             // 1. Title validation
             const titleInput = document.getElementById('title');
             const titleVal = titleInput.value.trim();
@@ -984,22 +1109,32 @@
                 clearFieldError('title');
             }
 
-            // 2. Category validation
+            // 2. Category validation (with manual custom category support)
             const catSelect = document.getElementById('category');
+            const customCatInput = document.getElementById('customCategory');
             if (!catSelect.value) {
-                setFieldError('category', 'Incident category is required. Please select one.');
+                setFieldError('category', 'Incident category is required. Please select one or enter manually.');
                 isValid = false;
                 if (!firstInvalidEl) firstInvalidEl = catSelect;
+            } else if (catSelect.value === 'OTHER' && (!customCatInput || !customCatInput.value.trim())) {
+                setFieldError('category', 'Please manually type your custom incident category.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = customCatInput;
             } else {
                 clearFieldError('category');
             }
 
-            // 3. Platform validation
+            // 3. Platform validation (with manual custom platform support)
             const platSelect = document.getElementById('platform');
+            const customPlatInput = document.getElementById('customPlatform');
             if (!platSelect.value) {
-                setFieldError('platform', 'Perpetrator platform is required. Please select one.');
+                setFieldError('platform', 'Perpetrator platform is required. Please select one or enter manually.');
                 isValid = false;
                 if (!firstInvalidEl) firstInvalidEl = platSelect;
+            } else if (platSelect.value === 'Other' && (!customPlatInput || !customPlatInput.value.trim())) {
+                setFieldError('platform', 'Please manually type your custom perpetrator platform.');
+                isValid = false;
+                if (!firstInvalidEl) firstInvalidEl = customPlatInput;
             } else {
                 clearFieldError('platform');
             }
@@ -1068,6 +1203,18 @@
                 uidVal = 1;
             }
 
+            const reporterNameVal = document.getElementById('reporterName') ? document.getElementById('reporterName').value.trim() : '';
+
+            // Resolve incident category (either selected preset or manual custom text)
+            const catSelectVal = document.getElementById('category').value;
+            const customCatVal = document.getElementById('customCategory') ? document.getElementById('customCategory').value.trim() : '';
+            const finalCategory = (catSelectVal === 'OTHER' && customCatVal) ? customCatVal : catSelectVal;
+
+            // Resolve perpetrator platform (either selected preset or manual custom text)
+            const platSelectVal = document.getElementById('platform').value;
+            const customPlatVal = document.getElementById('customPlatform') ? document.getElementById('customPlatform').value.trim() : '';
+            const finalPlatform = (platSelectVal === 'Other' && customPlatVal) ? customPlatVal : platSelectVal;
+
             submitBtn.disabled = true;
             submitBtn.innerText = 'Submitting & Analyzing...';
 
@@ -1075,9 +1222,12 @@
                 // Build atomic multipart request with all fields and multiple screenshots
                 const formData = new FormData();
                 formData.append('userId', uidVal);
+                if (reporterNameVal) {
+                    formData.append('reporterName', reporterNameVal);
+                }
                 formData.append('title', document.getElementById('title').value.trim());
-                formData.append('category', document.getElementById('category').value);
-                formData.append('platform', document.getElementById('platform').value);
+                formData.append('category', finalCategory);
+                formData.append('platform', finalPlatform);
                 formData.append('description', document.getElementById('description').value.trim());
                 formData.append('postUrl', document.getElementById('postUrl').value.trim());
 
@@ -1107,6 +1257,16 @@
                 const compNum = data.complaintNumber || (`CS-${data.id}`);
                 document.getElementById('popupComplaintNumber').innerText = compNum;
 
+                // Reporter and Platform details in popup
+                const popupReporter = document.getElementById('popupReporterName');
+                if (popupReporter) {
+                    popupReporter.innerText = data.reporterName || reporterNameVal || `User #${uidVal}`;
+                }
+                const popupPlat = document.getElementById('popupPlatformText');
+                if (popupPlat) {
+                    popupPlat.innerText = finalPlatform;
+                }
+
                 // Status Badge
                 const statusVal = data.status || 'PENDING';
                 document.getElementById('popupStatusBadge').innerHTML = `<span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">${statusVal}</span>`;
@@ -1134,7 +1294,7 @@
                 }
                 const catEl = document.getElementById('popupCategoryText');
                 if (catEl) {
-                    catEl.innerText = data.detectedCategory || (document.getElementById('category') ? document.getElementById('category').value : 'Online Harassment');
+                    catEl.innerText = finalCategory || data.detectedCategory || 'Online Harassment';
                 }
 
                 // Evidence row in popup

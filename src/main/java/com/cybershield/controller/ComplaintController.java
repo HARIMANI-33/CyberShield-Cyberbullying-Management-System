@@ -57,6 +57,7 @@ public class ComplaintController {
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "postUrl", required = false) String postUrl,
             @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "reporterName", required = false) String reporterName,
             @RequestParam(value = "files", required = false) List<MultipartFile> files,
             @RequestParam(value = "file", required = false) List<MultipartFile> fileList,
             HttpSession session) {
@@ -75,7 +76,7 @@ public class ComplaintController {
             if (files != null) allFiles.addAll(files);
             if (fileList != null) allFiles.addAll(fileList);
 
-            CreateComplaintRequest request = new CreateComplaintRequest(userId, title, category, platform, description, postUrl);
+            CreateComplaintRequest request = new CreateComplaintRequest(userId, title, category, platform, description, postUrl, reporterName);
             ComplaintResponse response = complaintService.registerComplaintWithEvidence(request, allFiles);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException ex) {

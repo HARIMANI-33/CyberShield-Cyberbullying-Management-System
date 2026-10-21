@@ -8,6 +8,7 @@ public class CreateComplaintRequest {
     private String platform;
     private String description;
     private String postUrl;
+    private String reporterName;
 
     public CreateComplaintRequest() {
     }
@@ -17,12 +18,17 @@ public class CreateComplaintRequest {
     }
 
     public CreateComplaintRequest(Long userId, String title, String category, String platform, String description, String postUrl) {
+        this(userId, title, category, platform, description, postUrl, null);
+    }
+
+    public CreateComplaintRequest(Long userId, String title, String category, String platform, String description, String postUrl, String reporterName) {
         this.userId = userId;
         this.title = title;
         this.category = category;
         this.platform = platform;
         this.description = description;
         this.postUrl = postUrl;
+        this.reporterName = reporterName;
     }
 
     public Long getUserId() {
@@ -81,5 +87,13 @@ public class CreateComplaintRequest {
 
     public void setIncidentDateTime(java.time.LocalDateTime incidentDateTime) {
         this.incidentDateTime = incidentDateTime;
+    }
+
+    public String getReporterName() {
+        return reporterName;
+    }
+
+    public void setReporterName(String reporterName) {
+        this.reporterName = reporterName;
     }
 }

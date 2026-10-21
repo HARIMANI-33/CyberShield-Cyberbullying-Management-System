@@ -146,6 +146,10 @@ public class ComplaintService {
         if (request.getPostUrl() != null && !request.getPostUrl().trim().isEmpty()) {
             complaint.setPostUrl(request.getPostUrl().trim());
         }
+        String repName = (request.getReporterName() != null && !request.getReporterName().isBlank())
+                ? request.getReporterName().trim()
+                : (user != null && user.getName() != null ? user.getName() : "Anonymous User");
+        complaint.setReporterName(repName);
         complaint.setIncidentDateTime(request.getIncidentDateTime());
         complaint.setUser(user);
         complaint.setStatus("PENDING");
@@ -181,6 +185,7 @@ public class ComplaintService {
                 analysis.getMatchedTerms()
         );
         response.setPostUrl(savedComplaint.getPostUrl());
+        response.setReporterName(savedComplaint.getReporterName());
         return response;
     }
 
@@ -225,6 +230,10 @@ public class ComplaintService {
         complaint.setPlatform(request.getPlatform().trim());
         complaint.setDescription(request.getDescription().trim());
         complaint.setPostUrl(request.getPostUrl().trim());
+        String repName = (request.getReporterName() != null && !request.getReporterName().isBlank())
+                ? request.getReporterName().trim()
+                : (user != null && user.getName() != null ? user.getName() : "Anonymous User");
+        complaint.setReporterName(repName);
         complaint.setIncidentDateTime(request.getIncidentDateTime());
         complaint.setUser(user);
         complaint.setStatus("PENDING");
@@ -262,6 +271,7 @@ public class ComplaintService {
                 analysis.getMatchedTerms()
         );
         response.setPostUrl(savedComplaint.getPostUrl());
+        response.setReporterName(savedComplaint.getReporterName());
         return response;
     }
 
@@ -305,11 +315,16 @@ public class ComplaintService {
         response.setCreatedAt(complaint.getCreatedAt());
         response.setIncidentDateTime(complaint.getIncidentDateTime());
         response.setAdminRemarks(complaint.getAdminRemarks());
+        response.setReporterName(complaint.getReporterName());
 
         if (complaint.getUser() != null) {
             response.setUserId(complaint.getUser().getId());
-            response.setUserName(complaint.getUser().getName());
+            response.setUserName((complaint.getReporterName() != null && !complaint.getReporterName().isBlank())
+                    ? complaint.getReporterName()
+                    : complaint.getUser().getName());
             response.setUserEmail(complaint.getUser().getEmail());
+        } else if (complaint.getReporterName() != null && !complaint.getReporterName().isBlank()) {
+            response.setUserName(complaint.getReporterName());
         }
 
         response.setEvidence(evidenceItems);
@@ -334,11 +349,15 @@ public class ComplaintService {
                             ))
                             .collect(Collectors.toList());
 
+                    String repName = (c.getReporterName() != null && !c.getReporterName().isBlank())
+                            ? c.getReporterName()
+                            : ((c.getUser() != null) ? c.getUser().getName() : "Unknown");
+
                     ComplaintSummaryResponse resp = new ComplaintSummaryResponse(
                             c.getId(),
                             c.getComplaintNumber(),
                             c.getTitle(),
-                            (c.getUser() != null) ? c.getUser().getName() : "Unknown",
+                            repName,
                             c.getThreatLevel(),
                             c.getPriority(),
                             c.getStatus(),
@@ -347,6 +366,7 @@ public class ComplaintService {
                     resp.setPlatform(c.getPlatform());
                     resp.setDescription(c.getDescription());
                     resp.setPostUrl(c.getPostUrl());
+                    resp.setReporterName(c.getReporterName());
                     resp.setEvidence(evidenceItems);
                     return resp;
                 })
@@ -369,11 +389,15 @@ public class ComplaintService {
                             ))
                             .collect(Collectors.toList());
 
+                    String repName = (c.getReporterName() != null && !c.getReporterName().isBlank())
+                            ? c.getReporterName()
+                            : ((c.getUser() != null) ? c.getUser().getName() : "Unknown");
+
                     ComplaintSummaryResponse resp = new ComplaintSummaryResponse(
                             c.getId(),
                             c.getComplaintNumber(),
                             c.getTitle(),
-                            (c.getUser() != null) ? c.getUser().getName() : "Unknown",
+                            repName,
                             c.getThreatLevel(),
                             c.getPriority(),
                             c.getStatus(),
@@ -382,6 +406,7 @@ public class ComplaintService {
                     resp.setPlatform(c.getPlatform());
                     resp.setDescription(c.getDescription());
                     resp.setPostUrl(c.getPostUrl());
+                    resp.setReporterName(c.getReporterName());
                     resp.setEvidence(evidenceItems);
                     return resp;
                 })

@@ -48,6 +48,9 @@ public class Complaint {
     @Column(name = "post_url", length = 1024)
     private String postUrl;
 
+    @Column(name = "reporter_name")
+    private String reporterName;
+
     public Complaint() {
     }
 
@@ -187,5 +190,13 @@ public class Complaint {
 
     public void setPostUrl(String postUrl) {
         this.postUrl = postUrl;
+    }
+
+    public String getReporterName() {
+        return reporterName;
+    }
+
+    public void setReporterName(String reporterName) {
+        this.reporterName = reporterName;
     }
 }

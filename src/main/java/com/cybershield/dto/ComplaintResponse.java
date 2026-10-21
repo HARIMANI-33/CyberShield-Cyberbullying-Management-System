@@ -13,6 +13,7 @@ public class ComplaintResponse {
     private String detectedCategory;
     private String matchedTerms;
     private String postUrl;
+    private String reporterName;
 
     public ComplaintResponse() {
     }
@@ -139,5 +140,13 @@ public class ComplaintResponse {
 
     public void setPostUrl(String postUrl) {
         this.postUrl = postUrl;
+    }
+
+    public String getReporterName() {
+        return reporterName;
+    }
+
+    public void setReporterName(String reporterName) {
+        this.reporterName = reporterName;
     }
 }

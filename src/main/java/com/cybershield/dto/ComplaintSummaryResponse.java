@@ -16,6 +16,7 @@ public class ComplaintSummaryResponse {
     private String platform;
     private String description;
     private String postUrl;
+    private String reporterName;
     private List<ComplaintDetailResponse.EvidenceItem> evidence;
 
     public ComplaintSummaryResponse() {
@@ -127,5 +128,13 @@ public class ComplaintSummaryResponse {
 
     public void setEvidence(List<ComplaintDetailResponse.EvidenceItem> evidence) {
         this.evidence = evidence;
+    }
+
+    public String getReporterName() {
+        return reporterName;
+    }
+
+    public void setReporterName(String reporterName) {
+        this.reporterName = reporterName;
     }
 }
